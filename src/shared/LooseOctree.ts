@@ -5,7 +5,7 @@ import { Workspace } from '@rbxts/services';
 type NewVector3 = ReturnType<typeof vector.create>;
 type Vector3Table = { x: number; y: number; z: number };
 type Vector3Tuple = [number, number, number];
-
+type OctreeChild = [Instance];
 const emptyVector3 = vector.create(0, 0, 0);
 
 class LooseOctree {
