@@ -1,3 +1,3 @@
 interface Workspace extends Instance {
-	Zombie: Model;
+  Zombie: Model;
 }

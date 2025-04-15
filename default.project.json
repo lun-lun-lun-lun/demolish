@@ -23,7 +23,7 @@
 					}
 				}
 			},
-			"$path": "src/ReplicatedStorage",
+			"$path": "out/ReplicatedStorage",
 			"TS": {
 				"$path": "out/shared"
 			}

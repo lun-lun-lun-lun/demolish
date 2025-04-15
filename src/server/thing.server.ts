@@ -1,3 +1,3 @@
-import { makeHello } from "shared/module";
+import { makeHello } from 'shared/module';
 
-print(makeHello("NMO!!!!! PMO TS PMO!"));
+print(makeHello('NMO!!!!! PMO TS PMO!'));

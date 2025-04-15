@@ -22,8 +22,10 @@
 		"plugin:prettier/recommended"
 	],
 	"rules": {
+		"function-paren-newline": ["warn", "multiline-arguments"],
+		// "function-paren-newline": ["error", "always"],
 		"prettier/prettier": [
-		"error",
+		"warn",
     	{"endOfLine": "auto"}
   		]
 	}
