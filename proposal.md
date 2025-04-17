@@ -1,7 +1,7 @@
 # CS30 Major Project    
   
 ## Description  
-Voxel destruction physics for Roblox, written in TypeScript.    
+Voxel destruction physics for Roblox, written in TypeScript, using Octrees to subdivide parts and partition space.  
   
 ## Needs To Have  
 - Octrees for spatial partitioning in the Broad Phase   
