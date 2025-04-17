@@ -1,7 +1,8 @@
 --!native
 --!optimize 2
 -- Compiled with roblox-ts v3.0.0
-local emptyVector3 = vector.create(0, 0, 0)
+--Types in TS us PascalCase
+local EmptyVector3 = vector.create(0, 0, 0)
 --since I have to use OOP, i'll use it for this
 local OctreeNode
 do
@@ -16,8 +17,8 @@ do
 		return self:constructor(...) or self
 	end
 	function OctreeNode:constructor(position, size, depth, maxDepth, minSize, lenient, originNode, parentNode)
-		self.position = emptyVector3
-		self.size = emptyVector3
+		self.position = EmptyVector3
+		self.size = EmptyVector3
 		self.maxDepth = 5
 		self.minSize = 50
 		self.lenientMinSize = true
@@ -68,6 +69,18 @@ do
 			end
 		end
 	end
+	function OctreeNode:query(hitboxShape, hitboxPosition, hitboxRotation, hitboxSize, octreeShape)
+		if octreeShape == "sphere" then
+			--sphere
+		else
+			--box
+		end
+		--spherical octree for querying
+		--makes more sense for my weird OBBs
+		--Dynamic BVH would also make sense to do for hitbox queries, but nahhhh... too long to make.
+		--less computational cost per query that way
+		--skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
+	end
 end
 local function Create(px, py, pz, sx, sy, sz, maxDepth, minSize, lenientMinSize)
 	--do sum
@@ -76,20 +89,12 @@ local function Create(px, py, pz, sx, sy, sz, maxDepth, minSize, lenientMinSize)
 	local newOctree = OctreeNode.new(position, size, 0, maxDepth, minSize, lenientMinSize, nil, nil)
 	return newOctree
 end
-local function Subdivide(timesToSubdivide)
-	--do sum
-	-- const position: NewVector3 = vector.create(px, py, pz);
-	-- const size: NewVector3 = vector.create(sx, sy, sz);
-	-- const newOctree = new OctreeNode(position, size, 5, true);
-	-- return newOctree;
-end
 local default = {
 	create = Create,
 }
 --"hi"
 return {
 	Create = Create,
-	Subdivide = Subdivide,
 	OctreeNode = OctreeNode,
 	default = default,
 }

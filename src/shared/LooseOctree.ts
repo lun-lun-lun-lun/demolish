@@ -2,18 +2,24 @@
 //!optimize 2
 
 import { Workspace } from '@rbxts/services';
+import { boxInSphere } from './CollisionCheck';
+import { sphereInSphere } from './CollisionCheck';
+import { boxInBox } from './CollisionCheck';
+
+//Types in TS us PascalCase
 type NewVector3 = ReturnType<typeof vector.create>;
 type Vector3Table = { x: number; y: number; z: number };
 type Vector3Tuple = [number, number, number];
 type OctreeDetected = [Instance] | [];
-const emptyVector3 = vector.create(0, 0, 0);
+const EmptyVector3 = vector.create(0, 0, 0);
+type ShapeTypes = 'box' | 'sphere';
 
 //since I have to use OOP, i'll use it for this
 
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
-  public position: NewVector3 = emptyVector3;
-  public size: NewVector3 = emptyVector3;
+  public position: NewVector3 = EmptyVector3;
+  public size: NewVector3 = EmptyVector3;
   public maxDepth: number = 5;
   public minSize: number = 50;
   public lenientMinSize: boolean = true; //All 3 axis have to be below minSize to stop subdivision.
@@ -21,6 +27,7 @@ export class OctreeNode {
   public originNode: OctreeNode | undefined = undefined;
   public parentNode: OctreeNode | undefined = undefined;
   public childNodes: OctreeNode[] = [];
+
   public detected: OctreeDetected = [];
   constructor(
     position: NewVector3,
@@ -107,6 +114,25 @@ export class OctreeNode {
       }
     }
   }
+
+  query(
+    hitboxShape: ShapeTypes,
+    hitboxPosition: NewVector3,
+    hitboxRotation: NewVector3,
+    hitboxSize: NewVector3,
+    octreeShape: ShapeTypes //treat each position as a sphere, or a cube?
+  ) {
+    if (octreeShape === 'sphere') {
+      //sphere
+    } else {
+      //box
+    }
+    //spherical octree for querying
+    //makes more sense for my weird OBBs
+    //Dynamic BVH would also make sense to do for hitbox queries, but nahhhh... too long to make.
+    //less computational cost per query that way
+    //skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
+  }
 }
 
 export function Create(
@@ -137,13 +163,6 @@ export function Create(
   return newOctree;
 }
 
-export function Subdivide(timesToSubdivide: number) {
-  //do sum
-  // const position: NewVector3 = vector.create(px, py, pz);
-  // const size: NewVector3 = vector.create(sx, sy, sz);
-  // const newOctree = new OctreeNode(position, size, 5, true);
-  // return newOctree;
-}
 export default {
   create: Create
 };
