@@ -13,10 +13,10 @@ Voxel destruction physics for Roblox, written in TypeScript, using Octrees to su
 
 
   
-## Nice To Have (in estimated order of difficulty)
-- Buffer usage
-- Part pooling on the client to aid performance
+## Nice To Have
+- Buffer usage to compress data and send it to the client efficiently
+- Cache parts ahead of time instead of creating a new part for each descruction
 - Loose Octree implementation (Or another spatial partitioning algorithm suitable for mostly static OBBs)
-- Custom Part replication
+- Custom part replication
 - Pseudo Greedy Meshing (mesh nearby parts of the same size)
 - Cutting out parts applies physics to the cutout
