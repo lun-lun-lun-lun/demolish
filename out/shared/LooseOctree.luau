@@ -24,7 +24,7 @@ do
 		self.depth = 0
 		self.originNode = nil
 		self.parentNode = nil
-		self.childNodes = nil
+		self.childNodes = {}
 		self.detected = {}
 		--const newVector: vector = vector.create(x, y, z);
 		self.position = position
@@ -36,24 +36,34 @@ do
 		self.originNode = if originNode ~= nil then originNode else nil
 		self.parentNode = if parentNode ~= nil then parentNode else nil
 	end
-	function OctreeNode:divide(timestoDivide)
-		-- const maxSizeX = math.max(this.size.x);
-		-- const maxSizeY = math.max(this.size.y);
-		-- const maxSizeZ = math.max(this.size.z);
+	function OctreeNode:divide(timesToDivide, currentDivision)
+		--these values are defined here so they dont have to be searched for 8 times in the loop
+		--is this a microoptimization? perhaps
+		local depth = self.depth
+		local maxDepth = self.maxDepth
+		local minSize = self.minSize
+		local lenientMinSize = self.lenientMinSize
+		local originNode = self.originNode or self
 		local size = self.size
-		local stepX = size.x / 2
-		local stepY = size.y / 2
-		local stepZ = size.z / 2
-		local offsetX = stepX / 2
-		local offsetY = stepY / 2
-		local offsetZ = stepZ / 2
+		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
+		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
+		local offsetX, offsetY, offsetZ = stepX / 2, stepY / 2, stepZ / 2
+		local newSize = vector.create(sizeX / 4, sizeY / 4, sizeZ / 4)
+		--create 8 equally sized, equally spaced nodes within the AABB of the Octree
 		for y = 0, 1 do
-			local newY = stepY * y + offsetY
+			local newY = stepY * -y + offsetY
 			for z = 0, 1 do
 				local newZ = stepZ * z + offsetZ
 				for x = 0, 1 do
 					local newX = stepX * x + offsetX
 					local newPosition = vector.create(newX, newY, newZ)
+					local newNode = OctreeNode.new(newPosition, newSize, depth + 1, maxDepth, minSize, lenientMinSize, originNode, self)
+					local _exp = self.childNodes
+					table.insert(_exp, newNode)
+					--if we've been tasked with dividing even more...
+					if currentDivision ~= nil and timesToDivide ~= nil and currentDivision <= timesToDivide then
+						newNode:divide(timesToDivide, currentDivision + 1)
+					end
 				end
 			end
 		end
@@ -80,5 +90,6 @@ local default = {
 return {
 	Create = Create,
 	Subdivide = Subdivide,
+	OctreeNode = OctreeNode,
 	default = default,
 }

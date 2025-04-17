@@ -10,7 +10,7 @@ const emptyVector3 = vector.create(0, 0, 0);
 
 //since I have to use OOP, i'll use it for this
 
-class OctreeNode {
+export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
   public position: NewVector3 = emptyVector3;
   public size: NewVector3 = emptyVector3;
@@ -20,7 +20,7 @@ class OctreeNode {
   public depth: number = 0;
   public originNode: OctreeNode | undefined = undefined;
   public parentNode: OctreeNode | undefined = undefined;
-  public childNodes: [OctreeNode] | undefined = undefined;
+  public childNodes: OctreeNode[] = [];
   public detected: OctreeDetected = [];
   constructor(
     position: NewVector3,
@@ -46,25 +46,63 @@ class OctreeNode {
       parentNode !== undefined ? parentNode : undefined;
   }
 
-  divide(timestoDivide: number) {
-    // const maxSizeX = math.max(this.size.x);
-    // const maxSizeY = math.max(this.size.y);
-    // const maxSizeZ = math.max(this.size.z);
+  divide(
+    timesToDivide: number,
+    currentDivision: number | undefined
+  ) {
+    //these values are defined here so they dont have to be searched for 8 times in the loop
+    //is this a microoptimization? perhaps
+    const depth = this.depth;
+    const maxDepth = this.maxDepth;
+    const minSize = this.minSize;
+    const lenientMinSize = this.lenientMinSize;
+    const originNode = this.originNode || this; //if an origin exists use that. otherwise say we're the origin
     const size = this.size;
-    const stepX = size.x / 2;
-    const stepY = size.y / 2;
-    const stepZ = size.z / 2;
-    const offsetX = stepX / 2;
-    const offsetY = stepY / 2;
-    const offsetZ = stepZ / 2;
+    const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
+    const [stepX, stepY, stepZ] = [
+      sizeX / 2,
+      sizeY / 2,
+      sizeZ / 2
+    ];
+    const [offsetX, offsetY, offsetZ] = [
+      stepX / 2,
+      stepY / 2,
+      stepZ / 2
+    ];
+    const newSize = vector.create(
+      sizeX / 4,
+      sizeY / 4,
+      sizeZ / 4
+    );
+    //create 8 equally sized, equally spaced nodes within the AABB of the Octree
     for (let y = 0; y < 2; y++) {
-      const newY = stepY * y + offsetY;
+      const newY = stepY * -y + offsetY;
       for (let z = 0; z < 2; z++) {
         const newZ = stepZ * z + offsetZ;
         for (let x = 0; x < 2; x++) {
           const newX = stepX * x + offsetX;
           const newPosition = vector.create(newX, newY, newZ);
-          const newSize = 
+          const newNode = new OctreeNode(
+            newPosition,
+            newSize,
+            depth + 1,
+            maxDepth,
+            minSize,
+            lenientMinSize,
+            originNode,
+            this
+          );
+
+          this.childNodes.push(newNode);
+
+          //if we've been tasked with dividing even more...
+          if (
+            currentDivision !== undefined &&
+            timesToDivide !== undefined &&
+            currentDivision <= timesToDivide
+          ) {
+            newNode.divide(timesToDivide, currentDivision + 1);
+          }
         }
       }
     }
