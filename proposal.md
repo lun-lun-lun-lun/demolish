@@ -6,7 +6,7 @@ Voxel destruction physics for Roblox, written in TypeScript, using Octrees to su
 ## Needs To Have  
 - Octrees for spatial partitioning in the Broad Phase   
 - Part OBBs approximated into bounding spheres/cylinders when inside of the Octree for cheaper broad phase checks
-- Performant collision detection method in the Narrow Phase
+- BoxInBox, BoxInSphere, and SphereInSphere collision detection method in the Narrow Phase 
 - Octrees for part subdivision after Narrow Phase
 - Certain physics attributes disabled on 'irrelevant' parts to aid performance
 

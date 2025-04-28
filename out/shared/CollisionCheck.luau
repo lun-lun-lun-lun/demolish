@@ -5,7 +5,7 @@
 --using !optimize 2 is just doing the same optimizations the rolbox would do in a live game
 --original calculations are from AxisAngle in 2015, i only translated from lua to typescript
 --const pointToObjectSpace = emptyCFrame.PointToObjectSpace;
-local function cylinderInCylinder(position0, height0, radius0, position1, height1, radius1)
+local function CylinderInCylinder(position0, height0, radius0, position1, height1, radius1)
 	local halfHeight0 = height0 / 2
 	local halfHeight1 = height1 / 2
 	local cylinder0Min = position0.Y - halfHeight0
@@ -935,7 +935,7 @@ local function boxInBox(cframe0, size0, cframe1, size1)
 	end
 	return false
 end
--- function CollisionCheck.BoxInBox(cframe0: CFrame, size0: Vector3, cframe1: CFrame, size1: Vector3): boolean
+-- function CollisionCheck.boxInBox(cframe0: CFrame, size0: Vector3, cframe1: CFrame, size1: Vector3): boolean
 -- 	 let	m00,m01,m02,
 -- 	m03,m04,m05,
 -- 	m06,m07,m08,
@@ -1100,7 +1100,7 @@ end
 -- end
 -- export default {};
 return {
-	cylinderInCylinder = cylinderInCylinder,
+	CylinderInCylinder = CylinderInCylinder,
 	boxInSphere = boxInSphere,
 	sphereInSphere = sphereInSphere,
 	boxInBox = boxInBox,

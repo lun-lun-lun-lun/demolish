@@ -11,11 +11,23 @@ type NewVector3 = ReturnType<typeof vector.create>;
 type Vector3Table = { x: number; y: number; z: number };
 type Vector3Tuple = [number, number, number];
 type OctreeDetected = [Instance] | [];
-const EmptyVector3 = vector.create(0, 0, 0);
 type ShapeTypes = 'box' | 'sphere';
 
-//since I have to use OOP, i'll use it for this
+const EmptyVector3 = vector.create(0, 0, 0);
+const templatePart = new Instance('Part');
+templatePart.Parent = Workspace;
+templatePart.Anchored = true;
+templatePart.CanCollide = false;
+templatePart.Transparency = 0.5;
+templatePart.CastShadow = false;
+templatePart.Shape = Enum.PartType.Block;
 
+//typescript is being REALLY annoying about vector and vector3s when they use the exact same type as of april
+function vectorToVector3(vector: vector): Vector3 {
+  return new Vector3(vector.x, vector.y, vector.z);
+}
+
+//since I have to use OOP, i'll use it for this
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
   public position: NewVector3 = EmptyVector3;
@@ -47,10 +59,23 @@ export class OctreeNode {
     this.minSize = minSize;
     this.lenientMinSize = lenient;
     this.depth = depth;
-    this.originNode =
-      originNode !== undefined ? originNode : undefined;
-    this.parentNode =
-      parentNode !== undefined ? parentNode : undefined;
+    this.originNode = originNode;
+    this.parentNode = parentNode;
+    //show  avisual representation
+    this.display('Block');
+  }
+
+  display(shape: 'Block' | 'Ball') {
+    const nodePart = templatePart.Clone();
+    nodePart.Color = Color3.fromRGB(
+      math.random(1, 255),
+      math.random(1, 255),
+      math.random(1, 255)
+    );
+    nodePart.Position = vectorToVector3(this.position);
+    nodePart.Size = vectorToVector3(this.size);
+    nodePart.Parent = Workspace;
+    nodePart.Shape = Enum.PartType[shape];
   }
 
   divide(
@@ -72,16 +97,16 @@ export class OctreeNode {
       sizeZ / 2
     ];
     const [offsetX, offsetY, offsetZ] = [
-      stepX / 2,
-      stepY / 2,
-      stepZ / 2
+      -stepX / 2 + originNode.position.x,
+      stepY - stepY / 2 + originNode.position.y,
+      -stepZ / 2 + originNode.position.z
     ];
     const newSize = vector.create(
-      sizeX / 4,
-      sizeY / 4,
-      sizeZ / 4
+      sizeX / 2,
+      sizeY / 2,
+      sizeZ / 2
     );
-    //create 8 equally sized, equally spaced nodes within the AABB of the Octree
+    //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (let y = 0; y < 2; y++) {
       const newY = stepY * -y + offsetY;
       for (let z = 0; z < 2; z++) {
@@ -96,20 +121,23 @@ export class OctreeNode {
             maxDepth,
             minSize,
             lenientMinSize,
-            originNode,
+            this.originNode,
             this
           );
-
           this.childNodes.push(newNode);
-
-          //if we've been tasked with dividing even more...
-          if (
-            currentDivision !== undefined &&
-            timesToDivide !== undefined &&
-            currentDivision <= timesToDivide
-          ) {
-            newNode.divide(timesToDivide, currentDivision + 1);
+          const realCurrentDivision =
+            currentDivision === undefined ? 1 : currentDivision;
+          print(realCurrentDivision);
+          print(currentDivision, realCurrentDivision);
+          if (realCurrentDivision < 2) {
+            print('we should divide');
+            newNode.divide(
+              timesToDivide,
+              realCurrentDivision + 1
+            );
           }
+          //task.wait(0);
+          //newNode.display('Block');
         }
       }
     }

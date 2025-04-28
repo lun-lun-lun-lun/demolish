@@ -8,7 +8,7 @@
 
 //const pointToObjectSpace = emptyCFrame.PointToObjectSpace;
 
-export function cylinderInCylinder(
+export function CylinderInCylinder(
   position0: Vector3,
   height0: number,
   radius0: number,
@@ -1037,7 +1037,7 @@ export function boxInBox(
   return false;
 }
 
-// function CollisionCheck.BoxInBox(cframe0: CFrame, size0: Vector3, cframe1: CFrame, size1: Vector3): boolean
+// function CollisionCheck.boxInBox(cframe0: CFrame, size0: Vector3, cframe1: CFrame, size1: Vector3): boolean
 // 	 let	m00,m01,m02,
 // 	m03,m04,m05,
 // 	m06,m07,m08,
