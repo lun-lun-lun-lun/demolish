@@ -37,14 +37,6 @@ do
 		return self:constructor(...) or self
 	end
 	function OctreeNode:constructor(position, size)
-		-- this.maxDepth = maxDepth;
-		-- this.minSize = minSize;
-		-- this.lenientMinSize = lenient;
-		-- this.depth = depth;
-		-- this.originNode = originNode;
-		-- this.parentNode = parentNode;
-		--show a visual representation
-		--this.display('Block');
 		self.position = nil
 		self.size = nil
 		self.detected = {}
@@ -58,7 +50,7 @@ do
 		-- this.originNode = originNode;
 		-- this.parentNode = parentNode;
 		--show a visual representation
-		--this.display('Block');
+		self:display("Block")
 	end
 	function OctreeNode:display(shape)
 		local nodePart = templatePart:Clone()
