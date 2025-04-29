@@ -36,28 +36,29 @@ do
 		local self = setmetatable({}, OctreeNode)
 		return self:constructor(...) or self
 	end
-	function OctreeNode:constructor(position, size, depth, maxDepth, minSize, lenient, originNode, parentNode)
+	function OctreeNode:constructor(position, size)
+		-- this.maxDepth = maxDepth;
+		-- this.minSize = minSize;
+		-- this.lenientMinSize = lenient;
+		-- this.depth = depth;
+		-- this.originNode = originNode;
+		-- this.parentNode = parentNode;
+		--show a visual representation
+		--this.display('Block');
 		self.position = nil
 		self.size = nil
-		self.maxDepth = nil
-		self.minSize = nil
-		self.lenientMinSize = nil
-		self.depth = nil
-		self.originNode = nil
-		self.parentNode = nil
-		self.childNodes = {}
 		self.detected = {}
 		--const newVector: vector = vector.create(x, y, z);
 		self.position = position
 		self.size = size
-		self.maxDepth = maxDepth
-		self.minSize = minSize
-		self.lenientMinSize = lenient
-		self.depth = depth
-		self.originNode = originNode
-		self.parentNode = parentNode
+		-- this.maxDepth = maxDepth;
+		-- this.minSize = minSize;
+		-- this.lenientMinSize = lenient;
+		-- this.depth = depth;
+		-- this.originNode = originNode;
+		-- this.parentNode = parentNode;
 		--show a visual representation
-		self:display("Block")
+		--this.display('Block');
 	end
 	function OctreeNode:display(shape)
 		local nodePart = templatePart:Clone()
@@ -67,29 +68,23 @@ do
 		nodePart.Parent = Workspace
 		nodePart.Shape = Enum.PartType[shape]
 	end
-	function OctreeNode:divideOctree(timesToDivide, currentDivision)
+	function OctreeNode:divideOctree(positionReference, timesToDivide, currentDivision)
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
-		local depth = self.depth
-		local maxDepth = self.maxDepth
-		local minSize = self.minSize
-		local lenientMinSize = self.lenientMinSize
-		local positionReference = self.originNode or self
 		local size = self.size
 		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
-		local offsetX, offsetY, offsetZ = -stepX / 2 + positionReference.position.x, positionReference.position.y - stepY / 2, -stepZ / 2 + positionReference.position.z
-		local newSize = newVector(sizeX / 2, sizeY / 2, sizeZ / 2)
+		local offsetX, offsetY, offsetZ = -stepX / 2 + positionReference.x, positionReference.y - stepY / 2, -stepZ / 2 + positionReference.z
+		local newSize = newVector(stepX, stepY, stepZ)
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
 			local newPosition = newVector(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
-			local newNode = OctreeNode.new(newPosition, newSize, depth + 1, maxDepth, minSize, lenientMinSize, self.originNode, self)
-			local _exp = self.childNodes
-			table.insert(_exp, newNode)
+			local newNode = OctreeNode.new(newPosition, newSize)
+			--this.childNodes.push(newNode);
 			--task.wait();
-			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 0
-			if realCurrentDivision < 1 then
-				newNode:divideOctree(1, realCurrentDivision + 1)
+			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
+			if realCurrentDivision < timesToDivide then
+				newNode:divideOctree(newPosition, 1, realCurrentDivision + 1)
 			end
 		end
 		print("Done building octree.")
@@ -111,7 +106,7 @@ local function Create(px, py, pz, sx, sy, sz, maxDepth, minSize, lenientMinSize)
 	--do sum
 	local position = vector.create(px, py, pz)
 	local size = vector.create(sx, sy, sz)
-	local newOctree = OctreeNode.new(position, size, 0, maxDepth, minSize, lenientMinSize, nil, nil)
+	local newOctree = OctreeNode.new(position, size)
 	return newOctree
 end
 local default = {

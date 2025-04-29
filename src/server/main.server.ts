@@ -43,5 +43,19 @@ const testOctree = LunOctree.create(
 );
 
 //print(testOctree);
-testOctree.divideOctree(5, undefined);
+const times = [];
+for (let i = 0; i < 100; i++) {
+  const startTime = os.clock();
+  testOctree.divideOctree(testOctree.position, 2, undefined);
+  const timeTaken = os.clock() - startTime;
+  print(timeTaken);
+  times.push(timeTaken);
+  task.wait(0.1);
+} //hiiii
+
+let total = 0;
+for (const time of times) {
+  total += time;
+}
+print(total / 100);
 //print(testOctree);

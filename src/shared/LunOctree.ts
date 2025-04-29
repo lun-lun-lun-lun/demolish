@@ -66,14 +66,14 @@ export class OctreeNode {
   public position: NewVector3 =
     undefined as unknown as NewVector3;
   public size: NewVector3 = undefined as unknown as NewVector3;
-  public maxDepth: number = undefined as unknown as number;
-  public minSize: number = undefined as unknown as number;
-  public lenientMinSize: boolean =
-    undefined as unknown as boolean; //All 3 axis have to be below minSize to stop subdivision.
-  public depth: number = undefined as unknown as number;
-  public originNode: OctreeNode | undefined = undefined;
-  public parentNode: OctreeNode | undefined = undefined;
-  public childNodes: OctreeNode[] = [];
+  // public maxDepth: number = undefined as unknown as number;
+  // public minSize: number = undefined as unknown as number;
+  // public lenientMinSize: boolean =
+  //   undefined as unknown as boolean; //All 3 axis have to be below minSize to stop subdivision.
+  // public depth: number = undefined as unknown as number;
+  // public originNode: OctreeNode | undefined = undefined;
+  // public parentNode: OctreeNode | undefined = undefined;
+  // public childNodes: OctreeNode[] = [];
 
   // public position: NewVector3 = EmptyVector3;
   // public size: NewVector3 = EmptyVector3;
@@ -88,26 +88,26 @@ export class OctreeNode {
   public detected: OctreeDetected = [];
   constructor(
     position: NewVector3,
-    size: NewVector3,
-    depth: number,
-    maxDepth: number,
-    minSize: number,
-    lenient: boolean,
-    originNode: OctreeNode | undefined,
-    parentNode: OctreeNode | undefined
+    size: NewVector3
+    //depth: number,
+    //maxDepth: number,
+    //minSize: number,
+    //lenient: boolean,
+    //originNode: OctreeNode | undefined,
+    //parentNode: OctreeNode | undefined
   ) {
     //const newVector: vector = vector.create(x, y, z);
 
     this.position = position;
     this.size = size;
-    this.maxDepth = maxDepth;
-    this.minSize = minSize;
-    this.lenientMinSize = lenient;
-    this.depth = depth;
-    this.originNode = originNode;
-    this.parentNode = parentNode;
+    // this.maxDepth = maxDepth;
+    // this.minSize = minSize;
+    // this.lenientMinSize = lenient;
+    // this.depth = depth;
+    // this.originNode = originNode;
+    // this.parentNode = parentNode;
     //show a visual representation
-    this.display('Block');
+    //this.display('Block');
   }
 
   display(shape: 'Block' | 'Ball') {
@@ -124,16 +124,12 @@ export class OctreeNode {
   }
 
   divideOctree(
+    positionReference: vector,
     timesToDivide: number,
     currentDivision: number | undefined
   ) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
-    const depth = this.depth;
-    const maxDepth = this.maxDepth;
-    const minSize = this.minSize;
-    const lenientMinSize = this.lenientMinSize;
-    const positionReference = this.originNode || this;
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [
@@ -142,11 +138,11 @@ export class OctreeNode {
       sizeZ / 2
     ];
     const [offsetX, offsetY, offsetZ] = [
-      -stepX / 2 + positionReference.position.x,
-      positionReference.position.y - stepY / 2,
-      -stepZ / 2 + positionReference.position.z
+      -stepX / 2 + positionReference.x,
+      positionReference.y - stepY / 2,
+      -stepZ / 2 + positionReference.z
     ];
-    const newSize = newVector(sizeX / 2, sizeY / 2, sizeZ / 2);
+    const newSize = newVector(stepX, stepY, stepZ);
 
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
@@ -155,22 +151,18 @@ export class OctreeNode {
         stepChange.y * stepY + offsetY,
         stepChange.z * stepZ + offsetZ
       );
-      const newNode = new OctreeNode(
-        newPosition,
-        newSize,
-        depth + 1,
-        maxDepth,
-        minSize,
-        lenientMinSize,
-        this.originNode,
-        this
-      );
-      this.childNodes.push(newNode);
+      const newNode = new OctreeNode(newPosition, newSize);
+      //this.childNodes.push(newNode);
       //task.wait();
       const realCurrentDivision =
-        currentDivision !== undefined ? currentDivision : 0;
-      if (realCurrentDivision < 1) {
-        newNode.divideOctree(1, realCurrentDivision + 1);
+        currentDivision !== undefined ? currentDivision : 1;
+      if (realCurrentDivision < timesToDivide) {
+        newNode.divideOctree(
+          //this.position,
+          newPosition,
+          1,
+          realCurrentDivision + 1
+        );
       }
     }
     print('Done building octree.');
@@ -212,13 +204,13 @@ export function Create(
   const size: NewVector3 = vector.create(sx, sy, sz);
   const newOctree = new OctreeNode(
     position,
-    size,
-    0,
-    maxDepth,
-    minSize,
-    lenientMinSize,
-    undefined,
-    undefined
+    size
+    // 0,
+    // maxDepth,
+    // minSize,
+    // lenientMinSize,
+    // undefined,
+    // undefined
   );
 
   return newOctree;
