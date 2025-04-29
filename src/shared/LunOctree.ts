@@ -63,29 +63,8 @@ const dualtreeDivisionPositions = [
 //since I have to use OOP, i'll use it for this
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
-  public position: NewVector3 =
-    undefined as unknown as NewVector3;
-  public size: NewVector3 = undefined as unknown as NewVector3;
-  // public maxDepth: number = undefined as unknown as number;
-  // public minSize: number = undefined as unknown as number;
-  // public lenientMinSize: boolean =
-  //   undefined as unknown as boolean; //All 3 axis have to be below minSize to stop subdivision.
-  // public depth: number = undefined as unknown as number;
-  // public originNode: OctreeNode | undefined = undefined;
-  // public parentNode: OctreeNode | undefined = undefined;
-  // public childNodes: OctreeNode[] = [];
-
-  // public position: NewVector3 = EmptyVector3;
-  // public size: NewVector3 = EmptyVector3;
-  // public maxDepth: number = 5;
-  // public minSize: number = 50;
-  // public lenientMinSize: boolean = true; //All 3 axis have to be below minSize to stop subdivision.
-  // public depth: number = 0;
-  // public originNode: OctreeNode | undefined = undefined;
-  // public parentNode: OctreeNode | undefined = undefined;
-  // public childNodes: OctreeNode[] = [];
-
-  public detected: OctreeDetected = [];
+  public position: NewVector3;
+  public size: NewVector3;
   constructor(
     position: NewVector3,
     size: NewVector3

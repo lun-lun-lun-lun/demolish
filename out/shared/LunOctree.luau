@@ -37,9 +37,6 @@ do
 		return self:constructor(...) or self
 	end
 	function OctreeNode:constructor(position, size)
-		self.position = nil
-		self.size = nil
-		self.detected = {}
 		--const newVector: vector = vector.create(x, y, z);
 		self.position = position
 		self.size = size
