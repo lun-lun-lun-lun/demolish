@@ -13,10 +13,16 @@ import LunOctree from 'shared/LunOctree';
 // lol.kill("Hi");
 const position = [
   math.random(-50, 50),
-  math.random(25, 75),
+  math.random(-25, 50),
   math.random(-50, 50)
 ];
-const size = [50, 50, 50];
+const min = 1;
+const max = 20;
+const size = [
+  math.random(min, max),
+  math.random(min, max),
+  math.random(min, max)
+];
 const maxDepth = 5;
 const minSize = 1;
 const lenientMinSize = false;
@@ -36,5 +42,6 @@ const testOctree = LunOctree.create(
   lenientMinSize
 );
 
-print(testOctree);
-testOctree.divide(5, undefined);
+//print(testOctree);
+testOctree.divideOctree(5, undefined);
+//print(testOctree);

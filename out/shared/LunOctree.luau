@@ -16,6 +16,13 @@ templatePart.Shape = Enum.PartType.Block
 local function vectorToVector3(vector)
 	return Vector3.new(vector.x, vector.y, vector.z)
 end
+local newVector = vector.create
+--octree
+local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(0, 0, 1), newVector(0, 1, 1), newVector(1, 0, 1), newVector(1, 1, 0), newVector(1, 1, 1) })
+--quadtree
+local quadtreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(1, 1, 0) })
+--dualtree
+local dualtreeDivisionPositions = { newVector(1, 0, 0), newVector(0, 0, 0) }
 --since I have to use OOP, i'll use it for this
 local OctreeNode
 do
@@ -30,12 +37,12 @@ do
 		return self:constructor(...) or self
 	end
 	function OctreeNode:constructor(position, size, depth, maxDepth, minSize, lenient, originNode, parentNode)
-		self.position = EmptyVector3
-		self.size = EmptyVector3
-		self.maxDepth = 5
-		self.minSize = 50
-		self.lenientMinSize = true
-		self.depth = 0
+		self.position = nil
+		self.size = nil
+		self.maxDepth = nil
+		self.minSize = nil
+		self.lenientMinSize = nil
+		self.depth = nil
 		self.originNode = nil
 		self.parentNode = nil
 		self.childNodes = {}
@@ -49,7 +56,7 @@ do
 		self.depth = depth
 		self.originNode = originNode
 		self.parentNode = parentNode
-		--show  avisual representation
+		--show a visual representation
 		self:display("Block")
 	end
 	function OctreeNode:display(shape)
@@ -60,42 +67,32 @@ do
 		nodePart.Parent = Workspace
 		nodePart.Shape = Enum.PartType[shape]
 	end
-	function OctreeNode:divide(timesToDivide, currentDivision)
+	function OctreeNode:divideOctree(timesToDivide, currentDivision)
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
 		local depth = self.depth
 		local maxDepth = self.maxDepth
 		local minSize = self.minSize
 		local lenientMinSize = self.lenientMinSize
-		local originNode = self.originNode or self
+		local positionReference = self.originNode or self
 		local size = self.size
 		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
-		local offsetX, offsetY, offsetZ = -stepX / 2 + originNode.position.x, stepY - stepY / 2 + originNode.position.y, -stepZ / 2 + originNode.position.z
-		local newSize = vector.create(sizeX / 2, sizeY / 2, sizeZ / 2)
+		local offsetX, offsetY, offsetZ = -stepX / 2 + positionReference.position.x, positionReference.position.y - stepY / 2, -stepZ / 2 + positionReference.position.z
+		local newSize = newVector(sizeX / 2, sizeY / 2, sizeZ / 2)
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
-		for y = 0, 1 do
-			local newY = stepY * -y + offsetY
-			for z = 0, 1 do
-				local newZ = stepZ * z + offsetZ
-				for x = 0, 1 do
-					local newX = stepX * x + offsetX
-					local newPosition = vector.create(newX, newY, newZ)
-					local newNode = OctreeNode.new(newPosition, newSize, depth + 1, maxDepth, minSize, lenientMinSize, self.originNode, self)
-					local _exp = self.childNodes
-					table.insert(_exp, newNode)
-					local realCurrentDivision = if currentDivision == nil then 1 else currentDivision
-					print(realCurrentDivision)
-					print(currentDivision, realCurrentDivision)
-					if realCurrentDivision < 2 then
-						print("we should divide")
-						newNode:divide(timesToDivide, realCurrentDivision + 1)
-					end
-					--task.wait(0);
-					--newNode.display('Block');
-				end
+		for _, stepChange in octreeDivisionPositions do
+			local newPosition = newVector(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
+			local newNode = OctreeNode.new(newPosition, newSize, depth + 1, maxDepth, minSize, lenientMinSize, self.originNode, self)
+			local _exp = self.childNodes
+			table.insert(_exp, newNode)
+			--task.wait();
+			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 0
+			if realCurrentDivision < 1 then
+				newNode:divideOctree(1, realCurrentDivision + 1)
 			end
 		end
+		print("Done building octree.")
 	end
 	function OctreeNode:query(hitboxShape, hitboxPosition, hitboxRotation, hitboxSize, octreeShape)
 		if octreeShape == "sphere" then
