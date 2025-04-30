@@ -86,7 +86,7 @@ export class OctreeNode {
     // this.originNode = originNode;
     // this.parentNode = parentNode;
     //show a visual representation
-    this.display('Block');
+    //this.display('Block');
   }
 
   display(shape: 'Block' | 'Ball') {

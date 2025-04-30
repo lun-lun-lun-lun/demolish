@@ -25,7 +25,7 @@ task.wait(5);
 
 //print(testOctree);
 const times = [];
-for (let i = 0; i < 100; i++) {
+for (let i = 0; i < 300; i++) {
   const position = [
     math.random(-50, 50),
     math.random(-25, 50),
@@ -52,7 +52,7 @@ for (let i = 0; i < 100; i++) {
   const timeTaken = os.clock() - startTime;
   print(timeTaken);
   times.push(timeTaken);
-  task.wait(0.1);
+  task.wait();
 } //hiiii
 
 let total = 0;

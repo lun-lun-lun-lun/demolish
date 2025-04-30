@@ -16,7 +16,7 @@ local originNode = nil
 task.wait(5)
 --print(testOctree);
 local times = {}
-for i = 0, 99 do
+for i = 0, 299 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
 	local startTime = os.clock()
@@ -25,7 +25,7 @@ for i = 0, 99 do
 	local timeTaken = os.clock() - startTime
 	print(timeTaken)
 	table.insert(times, timeTaken)
-	task.wait(0.1)
+	task.wait()
 end
 local total = 0
 for _, time in times do
