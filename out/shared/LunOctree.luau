@@ -3,6 +3,7 @@
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
+local InstanceCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "InstanceCache").InstanceCache
 --Types in TS us PascalCase
 local EmptyVector3 = vector.create(0, 0, 0)
 local templatePart = Instance.new("Part")
@@ -23,6 +24,7 @@ local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 
 local quadtreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(1, 1, 0) })
 --dualtree
 local dualtreeDivisionPositions = { newVector(1, 0, 0), newVector(0, 0, 0) }
+local partCache = InstanceCache.new(templatePart, 500, nil, 50)
 --since I have to use OOP, i'll use it for this
 local OctreeNode
 do
@@ -50,7 +52,8 @@ do
 		self:display("Block")
 	end
 	function OctreeNode:display(shape)
-		local nodePart = templatePart:Clone()
+		local nodePart = partCache:get()
+		-- const nodePart = templatePart.Clone();
 		nodePart.Color = Color3.fromRGB(math.random(1, 255), math.random(1, 255), math.random(1, 255))
 		nodePart.Position = vectorToVector3(self.position)
 		nodePart.Size = vectorToVector3(self.size)

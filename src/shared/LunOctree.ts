@@ -2,6 +2,7 @@
 //!optimize 2
 
 import { Workspace } from '@rbxts/services';
+import { InstanceCache } from 'shared/InstanceCache';
 import { boxInSphere } from './CollisionCheck';
 import { sphereInSphere } from './CollisionCheck';
 import { boxInBox } from './CollisionCheck';
@@ -60,6 +61,12 @@ const dualtreeDivisionPositions = [
   newVector(0, 0, 0)
 ];
 
+const partCache = new InstanceCache(
+  templatePart,
+  500,
+  undefined,
+  50
+);
 //since I have to use OOP, i'll use it for this
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
@@ -90,7 +97,8 @@ export class OctreeNode {
   }
 
   display(shape: 'Block' | 'Ball') {
-    const nodePart = templatePart.Clone();
+    const nodePart = partCache.get() as Part;
+    // const nodePart = templatePart.Clone();
     nodePart.Color = Color3.fromRGB(
       math.random(1, 255),
       math.random(1, 255),

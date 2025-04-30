@@ -12,7 +12,7 @@ import LunOctree from 'shared/LunOctree';
 // import { Make } from "shared/LooseOctree";
 // lol.kill("Hi");
 
-const min = 1;
+const min = 10;
 const max = 20;
 
 const maxDepth = 5;
@@ -25,7 +25,8 @@ task.wait(5);
 
 //print(testOctree);
 const times = [];
-for (let i = 0; i < 100; i++) {
+const TESTS = 10;
+for (let i = 0; i < TESTS; i++) {
   const position = [
     math.random(-50, 50),
     math.random(-25, 50),
@@ -52,12 +53,12 @@ for (let i = 0; i < 100; i++) {
   const timeTaken = os.clock() - startTime;
   print(timeTaken);
   times.push(timeTaken);
-  task.wait(0.1);
+  task.wait(1);
 } //hiiii
 
 let total = 0;
 for (const time of times) {
   total += time;
 }
-print(total / 100);
+print(total / TESTS);
 //print(testOctree);

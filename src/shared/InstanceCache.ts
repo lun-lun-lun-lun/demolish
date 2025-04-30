@@ -2,40 +2,82 @@
 //!optimize 2
 
 import { Workspace } from '@rbxts/services';
+import { Spawn } from 'shared/SpawnTs';
 
 type NewVector = ReturnType<typeof vector.create>;
+type Cacheable = Part | Model;
 
 const cache: Instance[] = [];
 const FAR = 9999;
-const DEFAULT_CACHE_POSITION = new CFrame(FAR, FAR, FAR);
+const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
+//const MAX_CACHED_INSTANCES = 9000;
 
 export class InstanceCache {
-  public cache: [Part | Model] = [] as unknown as [Part | Model];
-  public hideCFrame: CFrame = DEFAULT_CACHE_POSITION;
+  public template: Cacheable = undefined as unknown as Cacheable;
+  public cache: [Cacheable] = [] as unknown as [Cacheable];
+  public hiddenCframe: CFrame = DEFAULT_CACHE_POSITION;
+  public cframeTable: CFrame[] = [] as unknown as CFrame[];
+  public maximum: number = 9000;
+  // private cframeTable: CFrame[] = table.create(
+  //   MAX_CACHED_INSTANCES,
+  //   DEFAULT_CACHE_POSITION
+  // );
   constructor(
-    templatePart: Part | Model,
+    template: Cacheable,
     amount: number,
-    position: vector | undefined
+    position: vector | undefined,
+    maximum: number
   ) {
+    this.maximum = maximum;
+    this.template = template;
+    //if you gave a position, we'll use it
+    this.hiddenCframe =
+      position !== undefined
+        ? new CFrame(position.x, position.y, position.z)
+        : this.hiddenCframe;
+    //make a table with the cframe repeated over and over for use with BulkMoveTo
+    this.cframeTable = table.create(amount, this.hiddenCframe);
     for (let i = 0; i < amount; i++) {
-      const templateClone: Part | Model = templatePart.Clone();
-      templateClone.Parent = Workspace;
-      //   if (type(templateClone) === "") {
-
-      //   }
-      this.cache.push(templateClone);
-      this.hideCFrame =
-        position !== undefined
-          ? new CFrame(position.x, position.y, position.z)
-          : DEFAULT_CACHE_POSITION;
-      templateClone.PivotTo(this.hideCFrame);
+      this._addNew(template.Clone());
     }
+    //becomes faster than manually moving each model after ~50 moves
+    Workspace.BulkMoveTo(
+      this.cache,
+      this.cframeTable,
+      Enum.BulkMoveMode.FireCFrameChanged
+    );
   }
-  getPart() {
-    for (const thing of this.cache) {
-      return thing;
+
+  //i use the underscore to say that you shouldnt be using the function, only me
+  _addNew(item: Cacheable) {
+    if (item.IsA('Part')) {
+      item.Anchored = true;
+    } else {
+      for (const subItem of item.GetDescendants()) {
+        if (
+          subItem.IsA('Part') === true &&
+          subItem.Anchored === false
+        ) {
+          subItem.Anchored = true;
+        }
+      }
     }
+    item.Parent = Workspace;
+    this.cache.push(item);
+  }
+
+  get() {
+    print(this.cache.size());
+    this.cframeTable.remove(0);
+    return this.cache.remove(0);
+  }
+
+  return() {
+    task.defer(function () {});
+    // Spawn(function () {
+    //   print('hiiii');
+    // });
   }
 }
 
-export default {};
+//export default {};

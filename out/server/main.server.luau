@@ -5,7 +5,7 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local LunOctree = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "LunOctree").default
 -- import { Make } from "shared/LooseOctree";
 -- lol.kill("Hi");
-local min = 1
+local min = 10
 local max = 20
 local maxDepth = 5
 local minSize = 1
@@ -16,7 +16,8 @@ local originNode = nil
 task.wait(5)
 --print(testOctree);
 local times = {}
-for i = 0, 99 do
+local TESTS = 10
+for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
 	local startTime = os.clock()
@@ -25,11 +26,11 @@ for i = 0, 99 do
 	local timeTaken = os.clock() - startTime
 	print(timeTaken)
 	table.insert(times, timeTaken)
-	task.wait(0.1)
+	task.wait(1)
 end
 local total = 0
 for _, time in times do
 	total += time
 end
-print(total / 100)
+print(total / TESTS)
 --print(testOctree);
