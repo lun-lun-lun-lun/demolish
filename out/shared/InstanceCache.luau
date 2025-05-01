@@ -5,7 +5,8 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local cache = {}
 local FAR = 9999
-local DEFAULT_CACHE_POSITION = CFrame.new(FAR, FAR, FAR)
+local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
+--const MAX_CACHED_INSTANCES = 9000;
 local InstanceCache
 do
 	InstanceCache = setmetatable({}, {
@@ -18,9 +19,18 @@ do
 		local self = setmetatable({}, InstanceCache)
 		return self:constructor(...) or self
 	end
-	function InstanceCache:constructor(templatePart, amount, position)
+	function InstanceCache:constructor(template, amount, position, maximum)
+		self.template = nil
 		self.cache = {}
-		self.hideCFrame = DEFAULT_CACHE_POSITION
+		self.hiddenCframe = DEFAULT_CACHE_POSITION
+		self.cframeTable = {}
+		self.maximum = 9000
+		self.maximum = maximum
+		self.template = template
+		--if you gave a position, we'll use it
+		self.hiddenCframe = if position ~= nil then CFrame.new(position.x, position.y, position.z) else self.hiddenCframe
+		--make a table with the cframe repeated over and over for use with BulkMoveTo
+		self.cframeTable = table.create(amount, self.hiddenCframe)
 		do
 			local i = 0
 			local _shouldIncrement = false
@@ -33,25 +43,40 @@ do
 				if not (i < amount) then
 					break
 				end
-				local templateClone = templatePart:Clone()
-				templateClone.Parent = Workspace
-				--   if (type(templateClone) === "") {
-				--   }
-				local _exp = self.cache
-				table.insert(_exp, templateClone)
-				self.hideCFrame = if position ~= nil then CFrame.new(position.x, position.y, position.z) else DEFAULT_CACHE_POSITION
-				templateClone:PivotTo(self.hideCFrame)
+				self:_addNew(template:Clone())
 			end
 		end
+		--becomes faster than manually moving each model after ~50 moves
+		Workspace:BulkMoveTo(self.cache, self.cframeTable, Enum.BulkMoveMode.FireCFrameChanged)
 	end
-	function InstanceCache:getPart()
-		for _, thing in self.cache do
-			return thing
+	function InstanceCache:_addNew(item)
+		if item:IsA("Part") then
+			item.Anchored = true
+		else
+			for _, subItem in item:GetDescendants() do
+				if subItem:IsA("Part") == true and subItem.Anchored == false then
+					subItem.Anchored = true
+				end
+			end
 		end
+		item.Parent = Workspace
+		local _cache = self.cache
+		local _item = item
+		table.insert(_cache, _item)
+	end
+	function InstanceCache:get()
+		print(#self.cache)
+		table.remove(self.cframeTable, 1)
+		return table.remove(self.cache, 1)
+	end
+	InstanceCache["return"] = function(self)
+		task.defer(function() end)
+		-- Spawn(function () {
+		--   print('hiiii');
+		-- });
 	end
 end
-local default = {}
+--export default {};
 return {
 	InstanceCache = InstanceCache,
-	default = default,
 }
