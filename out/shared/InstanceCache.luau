@@ -3,9 +3,10 @@
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
-local cache = {}
+local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
 local FAR = 9999
 local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
+local allCaches = {}
 --const MAX_CACHED_INSTANCES = 9000;
 local InstanceCache
 do
@@ -19,13 +20,12 @@ do
 		local self = setmetatable({}, InstanceCache)
 		return self:constructor(...) or self
 	end
-	function InstanceCache:constructor(template, amount, position, maximum)
+	function InstanceCache:constructor(template, amount, position)
 		self.template = nil
 		self.cache = {}
 		self.hiddenCframe = DEFAULT_CACHE_POSITION
 		self.cframeTable = {}
 		self.maximum = 9000
-		self.maximum = maximum
 		self.template = template
 		--if you gave a position, we'll use it
 		self.hiddenCframe = if position ~= nil then CFrame.new(position.x, position.y, position.z) else self.hiddenCframe
@@ -43,13 +43,13 @@ do
 				if not (i < amount) then
 					break
 				end
-				self:_addNew(template:Clone())
+				self:_addCopy(template:Clone())
 			end
 		end
 		--becomes faster than manually moving each model after ~50 moves
 		Workspace:BulkMoveTo(self.cache, self.cframeTable, Enum.BulkMoveMode.FireCFrameChanged)
 	end
-	function InstanceCache:_addNew(item)
+	function InstanceCache:_addCopy(item)
 		if item:IsA("Part") then
 			item.Anchored = true
 		else
@@ -76,6 +76,7 @@ do
 		-- });
 	end
 end
+RunService.Heartbeat:Connect(function() end)
 --export default {};
 return {
 	InstanceCache = InstanceCache,

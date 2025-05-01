@@ -2,14 +2,15 @@
 //!optimize 2
 
 import { Workspace } from '@rbxts/services';
+import { RunService } from '@rbxts/services';
 import { Spawn } from 'shared/SpawnTs';
 
 type NewVector = ReturnType<typeof vector.create>;
 type Cacheable = Part | Model;
-
-const cache: Instance[] = [];
 const FAR = 9999;
 const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
+const allCaches: Instance[] = [];
+
 //const MAX_CACHED_INSTANCES = 9000;
 
 export class InstanceCache {
@@ -18,17 +19,11 @@ export class InstanceCache {
   public hiddenCframe: CFrame = DEFAULT_CACHE_POSITION;
   public cframeTable: CFrame[] = [] as unknown as CFrame[];
   public maximum: number = 9000;
-  // private cframeTable: CFrame[] = table.create(
-  //   MAX_CACHED_INSTANCES,
-  //   DEFAULT_CACHE_POSITION
-  // );
   constructor(
     template: Cacheable,
     amount: number,
-    position: vector | undefined,
-    maximum: number
+    position: vector | undefined
   ) {
-    this.maximum = maximum;
     this.template = template;
     //if you gave a position, we'll use it
     this.hiddenCframe =
@@ -38,7 +33,7 @@ export class InstanceCache {
     //make a table with the cframe repeated over and over for use with BulkMoveTo
     this.cframeTable = table.create(amount, this.hiddenCframe);
     for (let i = 0; i < amount; i++) {
-      this._addNew(template.Clone());
+      this._addCopy(template.Clone());
     }
     //becomes faster than manually moving each model after ~50 moves
     Workspace.BulkMoveTo(
@@ -49,7 +44,7 @@ export class InstanceCache {
   }
 
   //i use the underscore to say that you shouldnt be using the function, only me
-  _addNew(item: Cacheable) {
+  _addCopy(item: Cacheable) {
     if (item.IsA('Part')) {
       item.Anchored = true;
     } else {
@@ -79,5 +74,7 @@ export class InstanceCache {
     // });
   }
 }
+
+RunService.Heartbeat.Connect(function () {});
 
 //export default {};

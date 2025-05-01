@@ -61,12 +61,7 @@ const dualtreeDivisionPositions = [
   newVector(0, 0, 0)
 ];
 
-const partCache = new InstanceCache(
-  templatePart,
-  500,
-  undefined,
-  50
-);
+const partCache = new InstanceCache(templatePart, 500, undefined);
 //since I have to use OOP, i'll use it for this
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.

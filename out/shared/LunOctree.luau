@@ -24,7 +24,7 @@ local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 
 local quadtreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(1, 1, 0) })
 --dualtree
 local dualtreeDivisionPositions = { newVector(1, 0, 0), newVector(0, 0, 0) }
-local partCache = InstanceCache.new(templatePart, 500, nil, 50)
+local partCache = InstanceCache.new(templatePart, 500, nil)
 --since I have to use OOP, i'll use it for this
 local OctreeNode
 do
