@@ -47,7 +47,8 @@ for (let i = 0; i < TESTS; i++) {
     size[2],
     maxDepth,
     minSize,
-    lenientMinSize
+    lenientMinSize,
+    'box'
   );
   testOctree.divideOctree(testOctree.position, 2, undefined);
   const timeTaken = os.clock() - startTime;

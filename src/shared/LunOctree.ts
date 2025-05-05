@@ -2,7 +2,7 @@
 //!optimize 2
 
 import { Workspace } from '@rbxts/services';
-import { InstanceCache } from 'shared/InstanceCache';
+import { AutoCache } from 'shared/AutoCache';
 import { boxInSphere } from './CollisionCheck';
 import { sphereInSphere } from './CollisionCheck';
 import { boxInBox } from './CollisionCheck';
@@ -61,15 +61,18 @@ const dualtreeDivisionPositions = [
   newVector(0, 0, 0)
 ];
 
-const partCache = new InstanceCache(templatePart, 500, undefined);
+const partCache = new AutoCache(templatePart, 500, undefined);
 //since I have to use OOP, i'll use it for this
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
   public position: NewVector3;
+  public shape: ShapeTypes = 'box';
+  public rotation: CFrame = undefined as unknown as CFrame;
   public size: NewVector3;
   constructor(
     position: NewVector3,
-    size: NewVector3
+    size: NewVector3,
+    shape: ShapeTypes
     //depth: number,
     //maxDepth: number,
     //minSize: number,
@@ -112,6 +115,8 @@ export class OctreeNode {
   ) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
+    const childNodes: { [key: string]: OctreeNode } =
+      {} as unknown as { [key: string]: OctreeNode };
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [
@@ -133,9 +138,13 @@ export class OctreeNode {
         stepChange.y * stepY + offsetY,
         stepChange.z * stepZ + offsetZ
       );
-      const newNode = new OctreeNode(newPosition, newSize);
-      //this.childNodes.push(newNode);
-      //task.wait();
+      const newNode = new OctreeNode(
+        newPosition,
+        newSize,
+        this.shape
+        //this.rotation
+      );
+      childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
       const realCurrentDivision =
         currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
@@ -147,7 +156,7 @@ export class OctreeNode {
         );
       }
     }
-    print('Done building octree.');
+    return childNodes;
   }
 
   query(
@@ -179,14 +188,16 @@ export function Create(
   sz: number,
   maxDepth: number,
   minSize: number,
-  lenientMinSize: boolean
+  lenientMinSize: boolean,
+  shape: ShapeTypes
 ) {
   //do sum
   const position: NewVector3 = vector.create(px, py, pz);
   const size: NewVector3 = vector.create(sx, sy, sz);
   const newOctree = new OctreeNode(
     position,
-    size
+    size,
+    shape
     // 0,
     // maxDepth,
     // minSize,

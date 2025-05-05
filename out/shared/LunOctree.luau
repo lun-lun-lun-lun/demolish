@@ -3,7 +3,7 @@
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
-local InstanceCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "InstanceCache").InstanceCache
+local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").AutoCache
 --Types in TS us PascalCase
 local EmptyVector3 = vector.create(0, 0, 0)
 local templatePart = Instance.new("Part")
@@ -24,7 +24,7 @@ local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 
 local quadtreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(1, 1, 0) })
 --dualtree
 local dualtreeDivisionPositions = { newVector(1, 0, 0), newVector(0, 0, 0) }
-local partCache = InstanceCache.new(templatePart, 500, nil)
+local partCache = AutoCache.new(templatePart, 500, nil)
 --since I have to use OOP, i'll use it for this
 local OctreeNode
 do
@@ -38,7 +38,9 @@ do
 		local self = setmetatable({}, OctreeNode)
 		return self:constructor(...) or self
 	end
-	function OctreeNode:constructor(position, size)
+	function OctreeNode:constructor(position, size, shape)
+		self.shape = "box"
+		self.rotation = nil
 		--const newVector: vector = vector.create(x, y, z);
 		self.position = position
 		self.size = size
@@ -63,6 +65,7 @@ do
 	function OctreeNode:divideOctree(positionReference, timesToDivide, currentDivision)
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
+		local childNodes = {}
 		local size = self.size
 		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
@@ -71,15 +74,14 @@ do
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
 			local newPosition = newVector(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
-			local newNode = OctreeNode.new(newPosition, newSize)
-			--this.childNodes.push(newNode);
-			--task.wait();
+			local newNode = OctreeNode.new(newPosition, newSize, self.shape)
+			childNodes[tostring(newVector)] = newNode
 			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
 			if realCurrentDivision < timesToDivide then
 				newNode:divideOctree(newPosition, 1, realCurrentDivision + 1)
 			end
 		end
-		print("Done building octree.")
+		return childNodes
 	end
 	function OctreeNode:query(hitboxShape, hitboxPosition, hitboxRotation, hitboxSize, octreeShape)
 		if octreeShape == "sphere" then
@@ -94,11 +96,11 @@ do
 		--skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
 	end
 end
-local function Create(px, py, pz, sx, sy, sz, maxDepth, minSize, lenientMinSize)
+local function Create(px, py, pz, sx, sy, sz, maxDepth, minSize, lenientMinSize, shape)
 	--do sum
 	local position = vector.create(px, py, pz)
 	local size = vector.create(sx, sy, sz)
-	local newOctree = OctreeNode.new(position, size)
+	local newOctree = OctreeNode.new(position, size, shape)
 	return newOctree
 end
 local default = {

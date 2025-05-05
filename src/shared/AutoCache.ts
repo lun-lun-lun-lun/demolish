@@ -9,17 +9,17 @@ type NewVector = ReturnType<typeof vector.create>;
 type Cacheable = Part | Model;
 const FAR = 9999;
 const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
-const allCaches: InstanceCache[] = [];
-
+const allCaches: AutoCache[] = [];
+const increaseRate = 5;
 //const MAX_CACHED_INSTANCES = 9000;
 
-export class InstanceCache {
+export class AutoCache {
   public template: Cacheable = undefined as unknown as Cacheable;
   public cache: [Cacheable] = [] as unknown as [Cacheable];
   public hiddenCframe: CFrame = DEFAULT_CACHE_POSITION;
   public cframeTable: CFrame[] = [] as unknown as CFrame[];
   public maximum: number = 9000;
-  public usedThisFrame: boolean = false; //eventually will be changed for a more robust analysis
+  public usedThisHeartbeat: boolean = false; //eventually will be changed for a more robust analysis
   constructor(
     template: Cacheable,
     amount: number,
@@ -81,7 +81,7 @@ export class InstanceCache {
     this.cache.push(item);
   }
   add(amount: number | undefined) {
-    this.usedThisFrame = true;
+    this.usedThisHeartbeat = true;
     const repeats = amount === undefined ? 1 : amount;
     for (let i = 0; i < repeats; i++) {
       this._addClone(this.template);
@@ -89,13 +89,13 @@ export class InstanceCache {
   }
 
   get() {
-    this.usedThisFrame = true;
+    this.usedThisHeartbeat = true;
     this.cframeTable.remove(0);
     return this.cache.remove(0);
   }
 
   return(item: Cacheable) {
-    this.usedThisFrame = true;
+    this.usedThisHeartbeat = true;
     const template = this.template;
     //fire destroy or something? it wasnt really destroyed though... not sure
     //for now i'll ignore things like that since they are irrelevant to my usecase, mostly
@@ -125,9 +125,23 @@ export class InstanceCache {
 }
 
 RunService.Heartbeat.Connect(function (deltaTime) {
-  for (const cache of allCaches) {
+  for (const iCache of allCaches) {
     //print(cache);
-    cache.usedThisFrame = false;
+    const cacheUsed = iCache.usedThisHeartbeat;
+    if (cacheUsed === true) {
+      iCache.usedThisHeartbeat = false;
+    } else if (
+      cacheUsed === false &&
+      iCache.cache.size() < iCache.maximum
+    ) {
+      const increase =
+        iCache.cache.size() + increaseRate > iCache.maximum
+          ? iCache.maximum - iCache.cache.size()
+          : increaseRate;
+      for (let i = 0; i < increase; i++) {
+        iCache._addClone(iCache.template);
+      }
+    }
   }
 });
 

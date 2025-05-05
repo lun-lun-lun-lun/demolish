@@ -7,26 +7,27 @@ local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxt
 local FAR = 9999
 local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
 local allCaches = {}
+local increaseRate = 5
 --const MAX_CACHED_INSTANCES = 9000;
-local InstanceCache
+local AutoCache
 do
-	InstanceCache = setmetatable({}, {
+	AutoCache = setmetatable({}, {
 		__tostring = function()
-			return "InstanceCache"
+			return "AutoCache"
 		end,
 	})
-	InstanceCache.__index = InstanceCache
-	function InstanceCache.new(...)
-		local self = setmetatable({}, InstanceCache)
+	AutoCache.__index = AutoCache
+	function AutoCache.new(...)
+		local self = setmetatable({}, AutoCache)
 		return self:constructor(...) or self
 	end
-	function InstanceCache:constructor(template, amount, position)
+	function AutoCache:constructor(template, amount, position)
 		self.template = nil
 		self.cache = {}
 		self.hiddenCframe = DEFAULT_CACHE_POSITION
 		self.cframeTable = {}
 		self.maximum = 9000
-		self.usedThisFrame = false
+		self.usedThisHeartbeat = false
 		self.template = template
 		--if you gave a position, we'll use it
 		self.hiddenCframe = if position ~= nil then CFrame.new(position.x, position.y, position.z) else self.hiddenCframe
@@ -50,7 +51,7 @@ do
 		--becomes faster than manually moving each model after ~50 moves
 		Workspace:BulkMoveTo(self.cache, self.cframeTable, Enum.BulkMoveMode.FireCFrameChanged)
 	end
-	function InstanceCache:_addItem(item)
+	function AutoCache:_addItem(item)
 		if item:IsA("Part") then
 			item.Anchored = true
 		else
@@ -65,7 +66,7 @@ do
 		local _item = item
 		table.insert(_cache, _item)
 	end
-	function InstanceCache:_addClone(originalItem)
+	function AutoCache:_addClone(originalItem)
 		local item = originalItem:Clone()
 		if item:IsA("Part") then
 			item.Anchored = true
@@ -80,8 +81,8 @@ do
 		local _exp = self.cache
 		table.insert(_exp, item)
 	end
-	function InstanceCache:add(amount)
-		self.usedThisFrame = true
+	function AutoCache:add(amount)
+		self.usedThisHeartbeat = true
 		local repeats = if amount == nil then 1 else amount
 		do
 			local i = 0
@@ -99,13 +100,13 @@ do
 			end
 		end
 	end
-	function InstanceCache:get()
-		self.usedThisFrame = true
+	function AutoCache:get()
+		self.usedThisHeartbeat = true
 		table.remove(self.cframeTable, 1)
 		return table.remove(self.cache, 1)
 	end
-	InstanceCache["return"] = function(self, item)
-		self.usedThisFrame = true
+	AutoCache["return"] = function(self, item)
+		self.usedThisHeartbeat = true
 		local template = self.template
 		--fire destroy or something? it wasnt really destroyed though... not sure
 		--for now i'll ignore things like that since they are irrelevant to my usecase, mostly
@@ -135,12 +136,32 @@ do
 	end
 end
 RunService.Heartbeat:Connect(function(deltaTime)
-	for _, cache in allCaches do
+	for _, iCache in allCaches do
 		--print(cache);
-		cache.usedThisFrame = false
+		local cacheUsed = iCache.usedThisHeartbeat
+		if cacheUsed == true then
+			iCache.usedThisHeartbeat = false
+		elseif cacheUsed == false and #iCache.cache < iCache.maximum then
+			local increase = if #iCache.cache + increaseRate > iCache.maximum then iCache.maximum - #iCache.cache else increaseRate
+			do
+				local i = 0
+				local _shouldIncrement = false
+				while true do
+					if _shouldIncrement then
+						i += 1
+					else
+						_shouldIncrement = true
+					end
+					if not (i < increase) then
+						break
+					end
+					iCache:_addClone(iCache.template)
+				end
+			end
+		end
 	end
 end)
 --export default {};
 return {
-	InstanceCache = InstanceCache,
+	AutoCache = AutoCache,
 }
