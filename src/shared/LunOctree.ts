@@ -14,7 +14,8 @@ type Vector3Tuple = [number, number, number];
 type OctreeDetected = [Instance] | [];
 type ShapeTypes = 'box' | 'sphere';
 
-const EmptyVector3 = vector.create(0, 0, 0);
+const EMPTY_VECTOR = vector.create(0, 0, 0);
+const EMPTY_CFRAME = new CFrame(0, 0, 0);
 const templatePart = new Instance('Part');
 templatePart.Parent = Workspace;
 templatePart.Anchored = true;
@@ -65,12 +66,11 @@ const partCache = new AutoCache(templatePart, 500, undefined);
 //since I have to use OOP, i'll use it for this
 export class OctreeNode {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
-  public position: NewVector3;
+  public cFrame: CFrame = EMPTY_CFRAME;
+  public size: NewVector3 = EMPTY_VECTOR;
   public shape: ShapeTypes = 'box';
-  public rotation: CFrame = undefined as unknown as CFrame;
-  public size: NewVector3;
   constructor(
-    position: NewVector3,
+    cFrame: CFrame,
     size: NewVector3,
     shape: ShapeTypes
     //depth: number,
@@ -82,8 +82,10 @@ export class OctreeNode {
   ) {
     //const newVector: vector = vector.create(x, y, z);
 
-    this.position = position;
+    this.cFrame = cFrame; //need cframes so I can use ToWorldSpace and position stuff sensibly.
     this.size = size;
+    this.shape = shape;
+
     // this.maxDepth = maxDepth;
     // this.minSize = minSize;
     // this.lenientMinSize = lenient;
@@ -102,8 +104,8 @@ export class OctreeNode {
       math.random(1, 255),
       math.random(1, 255)
     );
-    nodePart.Position = vectorToVector3(this.position);
-    nodePart.Size = vectorToVector3(this.size);
+    nodePart.CFrame = this.cFrame;
+    nodePart.Size = this.size as unknown as Vector3;
     nodePart.Parent = Workspace;
     nodePart.Shape = Enum.PartType[shape];
   }
@@ -115,8 +117,9 @@ export class OctreeNode {
   ) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
-    const childNodes: { [key: string]: OctreeNode } =
-      {} as unknown as { [key: string]: OctreeNode };
+    // const childNodes: { [key: string]: OctreeNode } =
+    //   {} as unknown as { [key: string]: OctreeNode };
+    const childNodes = new Map<Vector3, OctreeNode>();
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [
@@ -133,24 +136,28 @@ export class OctreeNode {
 
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
-      const newPosition = newVector(
+      const positionOffset = new CFrame(
         stepChange.x * stepX + offsetX,
         stepChange.y * stepY + offsetY,
         stepChange.z * stepZ + offsetZ
       );
+      const newCframe = this.cFrame.ToWorldSpace(positionOffset);
       const newNode = new OctreeNode(
-        newPosition,
+        newCframe,
         newSize,
         this.shape
         //this.rotation
       );
-      childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
+      //childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
+      const newPosition = newCframe.Position;
+      childNodes.set(newPosition, newNode);
+      print(childNodes.get(newPosition));
       const realCurrentDivision =
         currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
         newNode.divideOctree(
           //this.position,
-          newPosition,
+          newPosition as unknown as vector,
           1,
           realCurrentDivision + 1
         );
@@ -180,9 +187,7 @@ export class OctreeNode {
 }
 
 export function Create(
-  px: number,
-  py: number,
-  pz: number,
+  cFrame: CFrame,
   sx: number,
   sy: number,
   sz: number,
@@ -192,10 +197,10 @@ export function Create(
   shape: ShapeTypes
 ) {
   //do sum
-  const position: NewVector3 = vector.create(px, py, pz);
+  //const position: NewVector3 = vector.create(px, py, pz);
   const size: NewVector3 = vector.create(sx, sy, sz);
   const newOctree = new OctreeNode(
-    position,
+    cFrame,
     size,
     shape
     // 0,

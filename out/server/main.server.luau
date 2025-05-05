@@ -21,8 +21,8 @@ for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
 	local startTime = os.clock()
-	local testOctree = LunOctree.create(position[1], position[2], position[3], size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
-	testOctree:divideOctree(testOctree.position, 2, nil)
+	local testOctree = LunOctree.create(CFrame.new(0, 0, 0), size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
+	testOctree:divideOctree(testOctree.cFrame.Position, 2, nil)
 	local timeTaken = os.clock() - startTime
 	print(timeTaken)
 	table.insert(times, timeTaken)

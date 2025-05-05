@@ -39,9 +39,7 @@ for (let i = 0; i < TESTS; i++) {
   ];
   const startTime = os.clock();
   const testOctree = LunOctree.create(
-    position[0],
-    position[1],
-    position[2],
+    new CFrame(0, 0, 0),
     size[0],
     size[1],
     size[2],
@@ -50,7 +48,11 @@ for (let i = 0; i < TESTS; i++) {
     lenientMinSize,
     'box'
   );
-  testOctree.divideOctree(testOctree.position, 2, undefined);
+  testOctree.divideOctree(
+    testOctree.cFrame.Position as unknown as vector,
+    2,
+    undefined
+  );
   const timeTaken = os.clock() - startTime;
   print(timeTaken);
   times.push(timeTaken);

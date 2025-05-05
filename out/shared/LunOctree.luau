@@ -5,7 +5,8 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").AutoCache
 --Types in TS us PascalCase
-local EmptyVector3 = vector.create(0, 0, 0)
+local EMPTY_VECTOR = vector.create(0, 0, 0)
+local EMPTY_CFRAME = CFrame.new(0, 0, 0)
 local templatePart = Instance.new("Part")
 templatePart.Parent = Workspace
 templatePart.Anchored = true
@@ -38,12 +39,14 @@ do
 		local self = setmetatable({}, OctreeNode)
 		return self:constructor(...) or self
 	end
-	function OctreeNode:constructor(position, size, shape)
+	function OctreeNode:constructor(cFrame, size, shape)
+		self.cFrame = EMPTY_CFRAME
+		self.size = EMPTY_VECTOR
 		self.shape = "box"
-		self.rotation = nil
 		--const newVector: vector = vector.create(x, y, z);
-		self.position = position
+		self.cFrame = cFrame
 		self.size = size
+		self.shape = shape
 		-- this.maxDepth = maxDepth;
 		-- this.minSize = minSize;
 		-- this.lenientMinSize = lenient;
@@ -57,14 +60,16 @@ do
 		local nodePart = partCache:get()
 		-- const nodePart = templatePart.Clone();
 		nodePart.Color = Color3.fromRGB(math.random(1, 255), math.random(1, 255), math.random(1, 255))
-		nodePart.Position = vectorToVector3(self.position)
-		nodePart.Size = vectorToVector3(self.size)
+		nodePart.CFrame = self.cFrame
+		nodePart.Size = self.size
 		nodePart.Parent = Workspace
 		nodePart.Shape = Enum.PartType[shape]
 	end
 	function OctreeNode:divideOctree(positionReference, timesToDivide, currentDivision)
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
+		-- const childNodes: { [key: string]: OctreeNode } =
+		--   {} as unknown as { [key: string]: OctreeNode };
 		local childNodes = {}
 		local size = self.size
 		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
@@ -73,9 +78,13 @@ do
 		local newSize = newVector(stepX, stepY, stepZ)
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
-			local newPosition = newVector(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
-			local newNode = OctreeNode.new(newPosition, newSize, self.shape)
-			childNodes[tostring(newVector)] = newNode
+			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
+			local newCframe = self.cFrame:ToWorldSpace(positionOffset)
+			local newNode = OctreeNode.new(newCframe, newSize, self.shape)
+			--childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
+			local newPosition = newCframe.Position
+			childNodes[newPosition] = newNode
+			print((childNodes[newPosition]))
 			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
 			if realCurrentDivision < timesToDivide then
 				newNode:divideOctree(newPosition, 1, realCurrentDivision + 1)
@@ -96,11 +105,11 @@ do
 		--skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
 	end
 end
-local function Create(px, py, pz, sx, sy, sz, maxDepth, minSize, lenientMinSize, shape)
+local function Create(cFrame, sx, sy, sz, maxDepth, minSize, lenientMinSize, shape)
 	--do sum
-	local position = vector.create(px, py, pz)
+	--const position: NewVector3 = vector.create(px, py, pz);
 	local size = vector.create(sx, sy, sz)
-	local newOctree = OctreeNode.new(position, size, shape)
+	local newOctree = OctreeNode.new(cFrame, size, shape)
 	return newOctree
 end
 local default = {
