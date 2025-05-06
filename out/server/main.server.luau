@@ -16,7 +16,7 @@ local originNode = nil
 task.wait(5)
 --print(testOctree);
 local times = {}
-local TESTS = 10
+local TESTS = 200
 for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
@@ -25,9 +25,9 @@ for i = 0, TESTS - 1 do
 	local startTime = os.clock()
 	local testOctree = LunOctree.create(angle, size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
 	testOctree:divideOctree(testOctree.cFrame.Position, 2, nil)
-	local timeTaken = os.clock() - startTime
-	table.insert(times, timeTaken)
-	task.wait(5)
+	local _arg0 = os.clock() - startTime
+	table.insert(times, _arg0)
+	task.wait(1)
 end
 local total = 0
 for _, time in times do
