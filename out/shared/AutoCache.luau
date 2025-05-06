@@ -7,7 +7,7 @@ local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxt
 local FAR = 9999
 local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
 local allCaches = {}
-local increaseRate = 5
+local increaseRate = 1
 --const MAX_CACHED_INSTANCES = 9000;
 local AutoCache
 do

@@ -10,7 +10,7 @@ type Cacheable = Part | Model;
 const FAR = 9999;
 const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
 const allCaches: AutoCache[] = [];
-const increaseRate = 5;
+const increaseRate = 1;
 //const MAX_CACHED_INSTANCES = 9000;
 
 export class AutoCache {

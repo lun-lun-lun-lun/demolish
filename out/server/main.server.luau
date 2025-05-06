@@ -20,17 +20,17 @@ local TESTS = 10
 for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
+	local angle = CFrame.new(position[1], position[2], position[3])
+	angle = angle:ToObjectSpace(CFrame.Angles(math.random(1, 10), math.random(1, 10), math.random(1, 10)))
 	local startTime = os.clock()
-	local testOctree = LunOctree.create(CFrame.new(0, 0, 0), size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
+	local testOctree = LunOctree.create(angle, size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
 	testOctree:divideOctree(testOctree.cFrame.Position, 2, nil)
 	local timeTaken = os.clock() - startTime
-	print(timeTaken)
 	table.insert(times, timeTaken)
-	task.wait(1)
+	task.wait(5)
 end
 local total = 0
 for _, time in times do
 	total += time
 end
-print(total / TESTS)
 --print(testOctree);

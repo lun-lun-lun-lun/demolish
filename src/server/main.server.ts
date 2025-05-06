@@ -37,9 +37,17 @@ for (let i = 0; i < TESTS; i++) {
     math.random(min, max),
     math.random(min, max)
   ];
+  let angle = new CFrame(position[0], position[1], position[2]);
+  angle = angle.ToObjectSpace(
+    CFrame.Angles(
+      math.random(1, 10),
+      math.random(1, 10),
+      math.random(1, 10)
+    )
+  );
   const startTime = os.clock();
   const testOctree = LunOctree.create(
-    new CFrame(0, 0, 0),
+    angle,
     size[0],
     size[1],
     size[2],
@@ -54,14 +62,12 @@ for (let i = 0; i < TESTS; i++) {
     undefined
   );
   const timeTaken = os.clock() - startTime;
-  print(timeTaken);
   times.push(timeTaken);
-  task.wait(1);
+  task.wait(5);
 } //hiiii
 
 let total = 0;
 for (const time of times) {
   total += time;
 }
-print(total / TESTS);
 //print(testOctree);

@@ -74,7 +74,12 @@ do
 		local size = self.size
 		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
-		local offsetX, offsetY, offsetZ = -stepX / 2 + positionReference.x, positionReference.y - stepY / 2, -stepZ / 2 + positionReference.z
+		-- const [offsetX, offsetY, offsetZ] = [
+		--   -stepX / 2 + positionReference.x,
+		--   positionReference.y - stepY / 2,
+		--   -stepZ / 2 + positionReference.z
+		-- ];
+		local offsetX, offsetY, offsetZ = -stepX / 2, -stepY / 2, -stepZ / 2
 		local newSize = newVector(stepX, stepY, stepZ)
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
@@ -84,7 +89,6 @@ do
 			--childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
 			local newPosition = newCframe.Position
 			childNodes[newPosition] = newNode
-			print((childNodes[newPosition]))
 			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
 			if realCurrentDivision < timesToDivide then
 				newNode:divideOctree(newPosition, 1, realCurrentDivision + 1)

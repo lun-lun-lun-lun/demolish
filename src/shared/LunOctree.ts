@@ -127,10 +127,15 @@ export class OctreeNode {
       sizeY / 2,
       sizeZ / 2
     ];
+    // const [offsetX, offsetY, offsetZ] = [
+    //   -stepX / 2 + positionReference.x,
+    //   positionReference.y - stepY / 2,
+    //   -stepZ / 2 + positionReference.z
+    // ];
     const [offsetX, offsetY, offsetZ] = [
-      -stepX / 2 + positionReference.x,
-      positionReference.y - stepY / 2,
-      -stepZ / 2 + positionReference.z
+      -stepX / 2,
+      -stepY / 2,
+      -stepZ / 2
     ];
     const newSize = newVector(stepX, stepY, stepZ);
 
@@ -151,7 +156,7 @@ export class OctreeNode {
       //childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
       const newPosition = newCframe.Position;
       childNodes.set(newPosition, newNode);
-      print(childNodes.get(newPosition));
+
       const realCurrentDivision =
         currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
