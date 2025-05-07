@@ -7,8 +7,10 @@ local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxt
 local FAR = 9999
 local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
 local allCaches = {}
-local increaseRate = 1
 --const MAX_CACHED_INSTANCES = 9000;
+local rates = {
+	increase = 2,
+}
 local AutoCache
 do
 	AutoCache = setmetatable({}, {
@@ -26,7 +28,7 @@ do
 		self.cache = {}
 		self.hiddenCframe = DEFAULT_CACHE_POSITION
 		self.cframeTable = {}
-		self.maximum = 9000
+		self.maximum = 9999
 		self.usedThisHeartbeat = false
 		self.template = template
 		--if you gave a position, we'll use it
@@ -50,10 +52,13 @@ do
 		end
 		--becomes faster than manually moving each model after ~50 moves
 		Workspace:BulkMoveTo(self.cache, self.cframeTable, Enum.BulkMoveMode.FireCFrameChanged)
+		local _self = self
+		table.insert(allCaches, _self)
 	end
 	function AutoCache:_addItem(item)
 		if item:IsA("Part") then
 			item.Anchored = true
+			--item.CanCollide = false;
 		else
 			for _, subItem in item:GetDescendants() do
 				if subItem:IsA("Part") == true and subItem.Anchored == false then
@@ -137,12 +142,11 @@ do
 end
 RunService.Heartbeat:Connect(function(deltaTime)
 	for _, iCache in allCaches do
-		--print(cache);
 		local cacheUsed = iCache.usedThisHeartbeat
 		if cacheUsed == true then
 			iCache.usedThisHeartbeat = false
 		elseif cacheUsed == false and #iCache.cache < iCache.maximum then
-			local increase = if #iCache.cache + increaseRate > iCache.maximum then iCache.maximum - #iCache.cache else increaseRate
+			local increase = if #iCache.cache + rates.increase > iCache.maximum then iCache.maximum - #iCache.cache else rates.increase
 			do
 				local i = 0
 				local _shouldIncrement = false
@@ -155,13 +159,17 @@ RunService.Heartbeat:Connect(function(deltaTime)
 					if not (i < increase) then
 						break
 					end
-					iCache:_addClone(iCache.template)
+					iCache:_addItem(iCache.template:Clone())
 				end
 			end
+			--hi
 		end
 	end
 end)
+local default = rates
 --export default {};
 return {
+	rates = rates,
 	AutoCache = AutoCache,
+	default = default,
 }

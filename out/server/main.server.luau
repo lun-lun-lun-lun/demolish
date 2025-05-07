@@ -3,6 +3,7 @@
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local LunOctree = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "LunOctree").default
+local cacheControl = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").default
 -- import { Make } from "shared/LooseOctree";
 -- lol.kill("Hi");
 local min = 10
@@ -16,7 +17,7 @@ local originNode = nil
 task.wait(5)
 --print(testOctree);
 local times = {}
-local TESTS = 200
+local TESTS = 5
 for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
@@ -24,13 +25,16 @@ for i = 0, TESTS - 1 do
 	angle = angle:ToObjectSpace(CFrame.Angles(math.random(1, 10), math.random(1, 10), math.random(1, 10)))
 	local startTime = os.clock()
 	local testOctree = LunOctree.create(angle, size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
-	testOctree:divideOctree(testOctree.cFrame.Position, 2, nil)
-	local _arg0 = os.clock() - startTime
-	table.insert(times, _arg0)
+	testOctree:divideOctree(testOctree.cFrame.Position, math.random(1, 2), nil)
+	local timeee = os.clock() - startTime
+	table.insert(times, timeee)
+	print(timeee)
 	task.wait(1)
 end
 local total = 0
 for _, time in times do
 	total += time
 end
+print(total / #times)
+cacheControl.increase = 5
 --print(testOctree);

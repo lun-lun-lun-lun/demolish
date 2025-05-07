@@ -8,6 +8,7 @@ import { RunService } from '@rbxts/services';
 import { makeHello } from 'shared/module';
 
 import LunOctree from 'shared/LunOctree';
+import cacheControl from 'shared/AutoCache';
 
 // import { Make } from "shared/LooseOctree";
 // lol.kill("Hi");
@@ -25,7 +26,7 @@ task.wait(5);
 
 //print(testOctree);
 const times = [];
-const TESTS = 200;
+const TESTS = 5;
 for (let i = 0; i < TESTS; i++) {
   const position = [
     math.random(-50, 50),
@@ -58,10 +59,12 @@ for (let i = 0; i < TESTS; i++) {
   );
   testOctree.divideOctree(
     testOctree.cFrame.Position as unknown as vector,
-    2,
+    math.random(1, 2),
     undefined
   );
-  times.push(os.clock() - startTime);
+  const timeee = os.clock() - startTime;
+  times.push(timeee);
+  print(timeee);
   task.wait(1);
 } //hiiii
 
@@ -69,4 +72,7 @@ let total = 0;
 for (const time of times) {
   total += time;
 }
+
+print(total / times.size());
+cacheControl.increase = 5;
 //print(testOctree);

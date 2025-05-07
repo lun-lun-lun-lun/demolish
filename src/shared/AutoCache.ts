@@ -10,15 +10,16 @@ type Cacheable = Part | Model;
 const FAR = 9999;
 const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
 const allCaches: AutoCache[] = [];
-const increaseRate = 1;
 //const MAX_CACHED_INSTANCES = 9000;
-
+export const rates = {
+  increase: 2
+};
 export class AutoCache {
   public template: Cacheable = undefined as unknown as Cacheable;
   public cache: [Cacheable] = [] as unknown as [Cacheable];
   public hiddenCframe: CFrame = DEFAULT_CACHE_POSITION;
   public cframeTable: CFrame[] = [] as unknown as CFrame[];
-  public maximum: number = 9000;
+  public maximum: number = 9999;
   public usedThisHeartbeat: boolean = false; //eventually will be changed for a more robust analysis
   constructor(
     template: Cacheable,
@@ -42,6 +43,8 @@ export class AutoCache {
       this.cframeTable,
       Enum.BulkMoveMode.FireCFrameChanged
     );
+
+    allCaches.push(this);
   }
 
   //i use the underscore to say that you shouldnt be using the function, only me
@@ -49,6 +52,7 @@ export class AutoCache {
   _addItem(item: Cacheable) {
     if (item.IsA('Part')) {
       item.Anchored = true;
+      //item.CanCollide = false;
     } else {
       for (const subItem of item.GetDescendants()) {
         if (
@@ -126,7 +130,6 @@ export class AutoCache {
 
 RunService.Heartbeat.Connect(function (deltaTime) {
   for (const iCache of allCaches) {
-    //print(cache);
     const cacheUsed = iCache.usedThisHeartbeat;
     if (cacheUsed === true) {
       iCache.usedThisHeartbeat = false;
@@ -135,14 +138,17 @@ RunService.Heartbeat.Connect(function (deltaTime) {
       iCache.cache.size() < iCache.maximum
     ) {
       const increase =
-        iCache.cache.size() + increaseRate > iCache.maximum
+        iCache.cache.size() + rates.increase > iCache.maximum
           ? iCache.maximum - iCache.cache.size()
-          : increaseRate;
+          : rates.increase;
       for (let i = 0; i < increase; i++) {
-        iCache._addClone(iCache.template);
+        iCache._addItem(iCache.template.Clone());
       }
+      //hi
     }
   }
 });
+
+export default rates;
 
 //export default {};

@@ -93,7 +93,7 @@ export class OctreeNode {
     // this.originNode = originNode;
     // this.parentNode = parentNode;
     //show a visual representation
-    this.display('Block');
+    // this.display('Block');
   }
 
   display(shape: 'Block' | 'Ball') {
@@ -161,7 +161,6 @@ export class OctreeNode {
         currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
         newNode.divideOctree(
-          //this.position,
           newPosition as unknown as vector,
           1,
           realCurrentDivision + 1

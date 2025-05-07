@@ -40,6 +40,14 @@ do
 		return self:constructor(...) or self
 	end
 	function OctreeNode:constructor(cFrame, size, shape)
+		-- this.maxDepth = maxDepth;
+		-- this.minSize = minSize;
+		-- this.lenientMinSize = lenient;
+		-- this.depth = depth;
+		-- this.originNode = originNode;
+		-- this.parentNode = parentNode;
+		--show a visual representation
+		-- this.display('Block');
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
 		self.shape = "box"
@@ -54,7 +62,7 @@ do
 		-- this.originNode = originNode;
 		-- this.parentNode = parentNode;
 		--show a visual representation
-		self:display("Block")
+		-- this.display('Block');
 	end
 	function OctreeNode:display(shape)
 		local nodePart = partCache:get()
