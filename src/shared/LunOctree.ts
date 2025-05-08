@@ -64,15 +64,16 @@ const dualtreeDivisionPositions = [
 
 const partCache = new AutoCache(templatePart, 500, undefined);
 //since I have to use OOP, i'll use it for this
-export class OctreeNode {
+export class OctreeNode<containType> {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
   public cFrame: CFrame = EMPTY_CFRAME;
   public size: NewVector3 = EMPTY_VECTOR;
-  public shape: ShapeTypes = 'box';
+  //public contains: Map<NewVector3, containType> = new Map();
+  //public shape: ShapeTypes = 'box';
   constructor(
     cFrame: CFrame,
-    size: NewVector3,
-    shape: ShapeTypes
+    size: NewVector3
+    //shape: ShapeTypes
     //depth: number,
     //maxDepth: number,
     //minSize: number,
@@ -84,7 +85,7 @@ export class OctreeNode {
 
     this.cFrame = cFrame; //need cframes so I can use ToWorldSpace and position stuff sensibly.
     this.size = size;
-    this.shape = shape;
+    //this.shape = shape;
 
     // this.maxDepth = maxDepth;
     // this.minSize = minSize;
@@ -110,16 +111,12 @@ export class OctreeNode {
     nodePart.Shape = Enum.PartType[shape];
   }
 
-  divideOctree(
-    positionReference: vector,
-    timesToDivide: number,
-    currentDivision: number | undefined
-  ) {
+  divideOctree(timesToDivide: number, currentDivision?: number) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
     // const childNodes: { [key: string]: OctreeNode } =
     //   {} as unknown as { [key: string]: OctreeNode };
-    const childNodes = new Map<Vector3, OctreeNode>();
+    const childNodes = new Map<Vector3, OctreeNode<unknown>>();
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [
@@ -127,11 +124,6 @@ export class OctreeNode {
       sizeY / 2,
       sizeZ / 2
     ];
-    // const [offsetX, offsetY, offsetZ] = [
-    //   -stepX / 2 + positionReference.x,
-    //   positionReference.y - stepY / 2,
-    //   -stepZ / 2 + positionReference.z
-    // ];
     const [offsetX, offsetY, offsetZ] = [
       -stepX / 2,
       -stepY / 2,
@@ -147,66 +139,112 @@ export class OctreeNode {
         stepChange.z * stepZ + offsetZ
       );
       const newCframe = this.cFrame.ToWorldSpace(positionOffset);
-      const newNode = new OctreeNode(
-        newCframe,
-        newSize,
-        this.shape
-        //this.rotation
-      );
-      //childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
+      const newNode = new OctreeNode(newCframe, newSize);
       const newPosition = newCframe.Position;
       childNodes.set(newPosition, newNode);
 
       const realCurrentDivision =
         currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
-        newNode.divideOctree(
-          newPosition as unknown as vector,
-          1,
-          realCurrentDivision + 1
-        );
+        newNode.divideOctree(1, realCurrentDivision + 1);
       }
     }
     return childNodes;
   }
+}
+
+export class ShapetreeNode extends OctreeNode<Part> {
+  public contains: Map<NewVector3, Part> = new Map();
+  public shape = 'box';
+  public depth = 0;
+  public depthLimit = 3;
+  public divisionThreshold = 0;
+  //public shape: ShapeTypes = 'box';
+  constructor(
+    cFrame: CFrame,
+    size: NewVector3,
+    shape: ShapeTypes,
+    divisionThreshold: number = 5,
+    depthLimit: number = 5,
+    contains?: Map<NewVector3, Part>,
+    depth?: number
+    //shape: ShapeTypes
+    //depth: number,
+    //maxDepth: number,
+    //minSize: number,
+    //lenient: boolean,
+    //originNode: OctreeNode | undefined,
+    //parentNode: OctreeNode | undefined
+  ) {
+    //const newVector: vector = vector.create(x, y, z);
+    super(cFrame, size);
+    this.shape = shape;
+    this.divisionThreshold = divisionThreshold;
+    this.depthLimit = depthLimit;
+    if (contains !== undefined) {
+      this.contains = contains;
+    }
+    if (depth !== undefined) {
+      this.depth = depth;
+    }
+    //this.shape = shape;
+
+    // this.maxDepth = maxDepth;
+    // this.minSize = minSize;
+    // this.lenientMinSize = lenient;
+    // this.depth = depth;
+    // this.originNode = originNode;
+    // this.parentNode = parentNode;
+    //show a visual representation
+    // this.display('Block');
+  }
+  _insert(position: vector, item: Part) {
+    this.contains.set(position, item as Part);
+    //if too many objects, divide
+  }
+
+  tryInsert(
+    cframe: CFrame,
+    size: NewVector3,
+    itemShape: ShapeTypes,
+    item: Part
+  ) {
+    if (itemShape === 'box') {
+      //e
+    } else if (itemShape === 'sphere') {
+      print('hi');
+    }
+  }
 
   query(
-    hitboxShape: ShapeTypes,
-    hitboxPosition: NewVector3,
-    hitboxRotation: NewVector3,
+    hitboxCframe: CFrame,
     hitboxSize: NewVector3,
-    octreeShape: ShapeTypes //treat each position as a sphere, or a cube?
+    hitboxShape: ShapeTypes
   ) {
-    if (octreeShape === 'sphere') {
-      //sphere
-    } else {
-      //box
+    for (const item of this.contains) {
+      //collision checker logic
     }
-    //spherical octree for querying
-    //makes more sense for my weird OBBs
-    //Dynamic BVH would also make sense to do for hitbox queries, but nahhhh... too long to make.
-    //less computational cost per query that way
-    //skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
   }
 }
 
 export function Create(
   cFrame: CFrame,
-  sx: number,
-  sy: number,
-  sz: number,
-  maxDepth: number,
-  minSize: number,
-  lenientMinSize: boolean,
-  shape: ShapeTypes
+  size: NewVector3
+  // sx: number,
+  // sy: number,
+  // sz: number,
+  // maxDepth: number,
+  // minSize: number,
+  // lenientMinSize: boolean
+  //shape: ShapeTypes
 ) {
   //do sum
   //const position: NewVector3 = vector.create(px, py, pz);
-  const size: NewVector3 = vector.create(sx, sy, sz);
+  // const size: NewVector3 = vector.create(sx, sy, sz);
   const newOctree = new OctreeNode(
     cFrame,
-    size,
-    shape
+    size
+    //shape
     // 0,
     // maxDepth,
     // minSize,

@@ -22,8 +22,9 @@ const lenientMinSize = false;
 const parentNode = undefined;
 const originNode = undefined;
 //hiiii
+cacheControl.increase = 10;
 task.wait(5);
-
+cacheControl.increase = 0;
 //print(testOctree);
 const times = [];
 const TESTS = 5;
@@ -38,8 +39,8 @@ for (let i = 0; i < TESTS; i++) {
     math.random(min, max),
     math.random(min, max)
   ];
-  let angle = new CFrame(position[0], position[1], position[2]);
-  angle = angle.ToObjectSpace(
+  let cFrame = new CFrame(position[0], position[1], position[2]);
+  cFrame = cFrame.ToObjectSpace(
     CFrame.Angles(
       math.random(1, 10),
       math.random(1, 10),
@@ -48,23 +49,20 @@ for (let i = 0; i < TESTS; i++) {
   );
   const startTime = os.clock();
   const testOctree = LunOctree.create(
-    angle,
-    size[0],
-    size[1],
-    size[2],
-    maxDepth,
-    minSize,
-    lenientMinSize,
-    'box'
+    cFrame,
+    vector.create(size[0], size[1], size[2])
+    // size[0],
+    // size[1],
+    // size[2],
+    // maxDepth,
+    // minSize,
+    // lenientMinSize
+    //'box'
   );
-  testOctree.divideOctree(
-    testOctree.cFrame.Position as unknown as vector,
-    math.random(1, 2),
-    undefined
-  );
+  testOctree.divideOctree(math.random(1, 2));
   const timeee = os.clock() - startTime;
   times.push(timeee);
-  print(timeee);
+  //print(timeee);
   task.wait(1);
 } //hiiii
 
@@ -73,6 +71,5 @@ for (const time of times) {
   total += time;
 }
 
-print(total / times.size());
 cacheControl.increase = 5;
 //print(testOctree);

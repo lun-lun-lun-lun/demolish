@@ -14,27 +14,28 @@ local lenientMinSize = false
 local parentNode = nil
 local originNode = nil
 --hiiii
+cacheControl.increase = 10
 task.wait(5)
+cacheControl.increase = 0
 --print(testOctree);
 local times = {}
 local TESTS = 5
 for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
-	local angle = CFrame.new(position[1], position[2], position[3])
-	angle = angle:ToObjectSpace(CFrame.Angles(math.random(1, 10), math.random(1, 10), math.random(1, 10)))
+	local cFrame = CFrame.new(position[1], position[2], position[3])
+	cFrame = cFrame:ToObjectSpace(CFrame.Angles(math.random(1, 10), math.random(1, 10), math.random(1, 10)))
 	local startTime = os.clock()
-	local testOctree = LunOctree.create(angle, size[1], size[2], size[3], maxDepth, minSize, lenientMinSize, "box")
-	testOctree:divideOctree(testOctree.cFrame.Position, math.random(1, 2), nil)
+	local testOctree = LunOctree.create(cFrame, vector.create(size[1], size[2], size[3]))
+	testOctree:divideOctree(math.random(1, 2))
 	local timeee = os.clock() - startTime
 	table.insert(times, timeee)
-	print(timeee)
+	--print(timeee);
 	task.wait(1)
 end
 local total = 0
 for _, time in times do
 	total += time
 end
-print(total / #times)
 cacheControl.increase = 5
 --print(testOctree);

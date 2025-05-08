@@ -39,7 +39,8 @@ do
 		local self = setmetatable({}, OctreeNode)
 		return self:constructor(...) or self
 	end
-	function OctreeNode:constructor(cFrame, size, shape)
+	function OctreeNode:constructor(cFrame, size)
+		--this.shape = shape;
 		-- this.maxDepth = maxDepth;
 		-- this.minSize = minSize;
 		-- this.lenientMinSize = lenient;
@@ -50,11 +51,11 @@ do
 		-- this.display('Block');
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
-		self.shape = "box"
+		self.contains = {}
 		--const newVector: vector = vector.create(x, y, z);
 		self.cFrame = cFrame
 		self.size = size
-		self.shape = shape
+		--this.shape = shape;
 		-- this.maxDepth = maxDepth;
 		-- this.minSize = minSize;
 		-- this.lenientMinSize = lenient;
@@ -73,7 +74,7 @@ do
 		nodePart.Parent = Workspace
 		nodePart.Shape = Enum.PartType[shape]
 	end
-	function OctreeNode:divideOctree(positionReference, timesToDivide, currentDivision)
+	function OctreeNode:divideOctree(timesToDivide, currentDivision)
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
 		-- const childNodes: { [key: string]: OctreeNode } =
@@ -82,46 +83,82 @@ do
 		local size = self.size
 		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
-		-- const [offsetX, offsetY, offsetZ] = [
-		--   -stepX / 2 + positionReference.x,
-		--   positionReference.y - stepY / 2,
-		--   -stepZ / 2 + positionReference.z
-		-- ];
 		local offsetX, offsetY, offsetZ = -stepX / 2, -stepY / 2, -stepZ / 2
 		local newSize = newVector(stepX, stepY, stepZ)
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
 			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
 			local newCframe = self.cFrame:ToWorldSpace(positionOffset)
-			local newNode = OctreeNode.new(newCframe, newSize, self.shape)
-			--childNodes[tostring(newVector)] = newNode; //`0, 0, 0` = newNode
+			local newNode = OctreeNode.new(newCframe, newSize)
 			local newPosition = newCframe.Position
 			childNodes[newPosition] = newNode
 			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
 			if realCurrentDivision < timesToDivide then
-				newNode:divideOctree(newPosition, 1, realCurrentDivision + 1)
+				newNode:divideOctree(1, realCurrentDivision + 1)
 			end
 		end
 		return childNodes
 	end
-	function OctreeNode:query(hitboxShape, hitboxPosition, hitboxRotation, hitboxSize, octreeShape)
-		if octreeShape == "sphere" then
-			--sphere
-		else
-			--box
+end
+local ShapetreeNode
+do
+	local super = OctreeNode
+	ShapetreeNode = setmetatable({}, {
+		__tostring = function()
+			return "ShapetreeNode"
+		end,
+		__index = super,
+	})
+	ShapetreeNode.__index = ShapetreeNode
+	function ShapetreeNode.new(...)
+		local self = setmetatable({}, ShapetreeNode)
+		return self:constructor(...) or self
+	end
+	function ShapetreeNode:constructor(cFrame, size, shape, contains)
+		--const newVector: vector = vector.create(x, y, z);
+		super.constructor(self, cFrame, size)
+		--this.shape = shape;
+		-- this.maxDepth = maxDepth;
+		-- this.minSize = minSize;
+		-- this.lenientMinSize = lenient;
+		-- this.depth = depth;
+		-- this.originNode = originNode;
+		-- this.parentNode = parentNode;
+		--show a visual representation
+		-- this.display('Block');
+		self.contains = {}
+		if contains ~= nil then
+			self.contains = contains
 		end
-		--spherical octree for querying
-		--makes more sense for my weird OBBs
-		--Dynamic BVH would also make sense to do for hitbox queries, but nahhhh... too long to make.
-		--less computational cost per query that way
-		--skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
+		--this.shape = shape;
+		-- this.maxDepth = maxDepth;
+		-- this.minSize = minSize;
+		-- this.lenientMinSize = lenient;
+		-- this.depth = depth;
+		-- this.originNode = originNode;
+		-- this.parentNode = parentNode;
+		--show a visual representation
+		-- this.display('Block');
+	end
+	function ShapetreeNode:_insert(position, item)
+		local _contains = self.contains
+		local _position = position
+		local _item = item
+		_contains[_position] = _item
+		--if too many objects, divide
+	end
+	function ShapetreeNode:query(hitboxCframe, hitboxSize, hitboxShape)
+		for _k, _v in self.contains do
+			local item = { _k, _v }
+			--collision checker logic
+		end
 	end
 end
-local function Create(cFrame, sx, sy, sz, maxDepth, minSize, lenientMinSize, shape)
+local function Create(cFrame, size)
 	--do sum
 	--const position: NewVector3 = vector.create(px, py, pz);
-	local size = vector.create(sx, sy, sz)
-	local newOctree = OctreeNode.new(cFrame, size, shape)
+	-- const size: NewVector3 = vector.create(sx, sy, sz);
+	local newOctree = OctreeNode.new(cFrame, size)
 	return newOctree
 end
 local default = {
@@ -131,5 +168,6 @@ local default = {
 return {
 	Create = Create,
 	OctreeNode = OctreeNode,
+	ShapetreeNode = ShapetreeNode,
 	default = default,
 }
