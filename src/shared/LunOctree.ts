@@ -14,20 +14,35 @@ type Vector3Tuple = [number, number, number];
 type OctreeDetected = [Instance] | [];
 type ShapeTypes = 'box' | 'sphere';
 
+const sphereBoxCheck = (
+  position: vector,
+  radius: number,
+  params: OverlapParams
+) =>
+  Workspace.GetPartBoundsInRadius(
+    position as unknown as Vector3,
+    radius,
+    params
+  );
+const boxBoxCheck = (
+  cFrame: CFrame,
+  size: vector,
+  params: OverlapParams
+) =>
+  Workspace.GetPartBoundsInBox(
+    cFrame,
+    size as unknown as Vector3,
+    params
+  );
 const EMPTY_VECTOR = vector.create(0, 0, 0);
 const EMPTY_CFRAME = new CFrame(0, 0, 0);
-const templatePart = new Instance('Part');
-templatePart.Parent = Workspace;
-templatePart.Anchored = true;
-templatePart.CanCollide = false;
-templatePart.Transparency = 0.5;
-templatePart.CastShadow = false;
-templatePart.Shape = Enum.PartType.Block;
-
-//typescript is being REALLY annoying about vector and vector3s when they use the exact same type as of april
-function vectorToVector3(vector: vector): Vector3 {
-  return new Vector3(vector.x, vector.y, vector.z);
-}
+const DEFAULT_PART = new Instance('Part');
+DEFAULT_PART.Parent = Workspace;
+DEFAULT_PART.Anchored = true;
+DEFAULT_PART.CanCollide = false;
+DEFAULT_PART.Transparency = 0.5;
+DEFAULT_PART.CastShadow = false;
+DEFAULT_PART.Shape = Enum.PartType.Block;
 
 const newVector = vector.create;
 //octree
@@ -62,7 +77,7 @@ const dualtreeDivisionPositions = [
   newVector(0, 0, 0)
 ];
 
-const partCache = new AutoCache(templatePart, 500, undefined);
+const partCache = new AutoCache(DEFAULT_PART, 500, undefined);
 //since I have to use OOP, i'll use it for this
 export class OctreeNode<containType> {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
@@ -99,7 +114,7 @@ export class OctreeNode<containType> {
 
   display(shape: 'Block' | 'Ball') {
     const nodePart = partCache.get() as Part;
-    // const nodePart = templatePart.Clone();
+    // const nodePart = DEFAULT_PART.Clone();
     nodePart.Color = Color3.fromRGB(
       math.random(1, 255),
       math.random(1, 255),
@@ -155,10 +170,10 @@ export class OctreeNode<containType> {
 
 export class ShapetreeNode extends OctreeNode<Part> {
   public contains: Map<NewVector3, Part> = new Map();
-  public shape = 'box';
-  public depth = 0;
-  public depthLimit = 3;
-  public divisionThreshold = 0;
+  public shape: ShapeTypes = 'sphere';
+  public depth: number = 0;
+  public depthLimit: number = 3;
+  public divisionThreshold: number = 0;
   //public shape: ShapeTypes = 'box';
   constructor(
     cFrame: CFrame,
@@ -199,18 +214,26 @@ export class ShapetreeNode extends OctreeNode<Part> {
     // this.display('Block');
   }
   _insert(position: vector, item: Part) {
-    this.contains.set(position, item as Part);
+    this.contains.set(position, item);
     //if too many objects, divide
   }
 
   tryInsert(
-    cframe: CFrame,
-    size: NewVector3,
+    itemCframe: CFrame,
+    itemSize: NewVector3,
     itemShape: ShapeTypes,
     item: Part
   ) {
+    let result = false;
     if (itemShape === 'box') {
-      //e
+      if (this.shape === 'box') {
+        result = boxInBox(
+          itemCframe,
+          itemSize,
+          this.cFrame,
+          this.size
+        );
+      }
     } else if (itemShape === 'sphere') {
       print('hi');
     }

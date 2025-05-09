@@ -4,20 +4,23 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").AutoCache
+local boxInBox = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInBox
 --Types in TS us PascalCase
+local sphereBoxCheck = function(position, radius, params)
+	return Workspace:GetPartBoundsInRadius(position, radius, params)
+end
+local boxBoxCheck = function(cFrame, size, params)
+	return Workspace:GetPartBoundsInBox(cFrame, size, params)
+end
 local EMPTY_VECTOR = vector.create(0, 0, 0)
 local EMPTY_CFRAME = CFrame.new(0, 0, 0)
-local templatePart = Instance.new("Part")
-templatePart.Parent = Workspace
-templatePart.Anchored = true
-templatePart.CanCollide = false
-templatePart.Transparency = 0.5
-templatePart.CastShadow = false
-templatePart.Shape = Enum.PartType.Block
---typescript is being REALLY annoying about vector and vector3s when they use the exact same type as of april
-local function vectorToVector3(vector)
-	return Vector3.new(vector.x, vector.y, vector.z)
-end
+local DEFAULT_PART = Instance.new("Part")
+DEFAULT_PART.Parent = Workspace
+DEFAULT_PART.Anchored = true
+DEFAULT_PART.CanCollide = false
+DEFAULT_PART.Transparency = 0.5
+DEFAULT_PART.CastShadow = false
+DEFAULT_PART.Shape = Enum.PartType.Block
 local newVector = vector.create
 --octree
 local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(0, 0, 1), newVector(0, 1, 1), newVector(1, 0, 1), newVector(1, 1, 0), newVector(1, 1, 1) })
@@ -25,7 +28,7 @@ local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 
 local quadtreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(1, 1, 0) })
 --dualtree
 local dualtreeDivisionPositions = { newVector(1, 0, 0), newVector(0, 0, 0) }
-local partCache = AutoCache.new(templatePart, 500, nil)
+local partCache = AutoCache.new(DEFAULT_PART, 500, nil)
 --since I have to use OOP, i'll use it for this
 local OctreeNode
 do
@@ -51,7 +54,6 @@ do
 		-- this.display('Block');
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
-		self.contains = {}
 		--const newVector: vector = vector.create(x, y, z);
 		self.cFrame = cFrame
 		self.size = size
@@ -67,7 +69,7 @@ do
 	end
 	function OctreeNode:display(shape)
 		local nodePart = partCache:get()
-		-- const nodePart = templatePart.Clone();
+		-- const nodePart = DEFAULT_PART.Clone();
 		nodePart.Color = Color3.fromRGB(math.random(1, 255), math.random(1, 255), math.random(1, 255))
 		nodePart.CFrame = self.cFrame
 		nodePart.Size = self.size
@@ -114,7 +116,13 @@ do
 		local self = setmetatable({}, ShapetreeNode)
 		return self:constructor(...) or self
 	end
-	function ShapetreeNode:constructor(cFrame, size, shape, contains)
+	function ShapetreeNode:constructor(cFrame, size, shape, divisionThreshold, depthLimit, contains, depth)
+		if divisionThreshold == nil then
+			divisionThreshold = 5
+		end
+		if depthLimit == nil then
+			depthLimit = 5
+		end
 		--const newVector: vector = vector.create(x, y, z);
 		super.constructor(self, cFrame, size)
 		--this.shape = shape;
@@ -127,8 +135,18 @@ do
 		--show a visual representation
 		-- this.display('Block');
 		self.contains = {}
+		self.shape = "sphere"
+		self.depth = 0
+		self.depthLimit = 3
+		self.divisionThreshold = 0
+		self.shape = shape
+		self.divisionThreshold = divisionThreshold
+		self.depthLimit = depthLimit
 		if contains ~= nil then
 			self.contains = contains
+		end
+		if depth ~= nil then
+			self.depth = depth
 		end
 		--this.shape = shape;
 		-- this.maxDepth = maxDepth;
@@ -146,6 +164,16 @@ do
 		local _item = item
 		_contains[_position] = _item
 		--if too many objects, divide
+	end
+	function ShapetreeNode:tryInsert(itemCframe, itemSize, itemShape, item)
+		local result = false
+		if itemShape == "box" then
+			if self.shape == "box" then
+				result = boxInBox(itemCframe, itemSize, self.cFrame, self.size)
+			end
+		elseif itemShape == "sphere" then
+			print("hi")
+		end
 	end
 	function ShapetreeNode:query(hitboxCframe, hitboxSize, hitboxShape)
 		for _k, _v in self.contains do
