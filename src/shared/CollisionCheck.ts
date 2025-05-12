@@ -46,16 +46,18 @@ export function CylinderInCylinder(
 export function boxInSphere(
   cframe0: CFrame,
   size0: vector,
-  position1: ReturnType<typeof vector.create>,
+  position1: vector,
   radius1: number
 ): boolean {
-  const relative: vector = cframe0.PointToObjectSpace(position1);
+  const relative: Vector3 = cframe0.PointToObjectSpace(
+    position1 as unknown as Vector3
+  );
   const sizeX: number = size0.x / 2;
   const sizeY: number = size0.x / 2;
   const sizeZ: number = size0.z / 2;
-  const relX: number = relative.x;
-  const relY: number = relative.y;
-  const relZ: number = relative.z;
+  const relX: number = relative.X;
+  const relY: number = relative.Y;
+  const relZ: number = relative.Z;
 
   //very ugly to look at unfortunately, but a potential computation skip
   //also eslint is being very annoying && i wish i could specify the newline thing not to be forced
@@ -90,7 +92,12 @@ export function sphereInSphere(
   radius1: number
 ): boolean {
   //is the distance between our positions bigger than our radius?
-  return position1.sub(position0).Magnitude < radius0 + radius1;
+  const magnitude = math.sqrt(
+    ((position1.x - position0.x) ^ 2) +
+      ((position1.y - position0.y) ^ 2) +
+      ((position1.z - position0.z) ^ 2)
+  );
+  return magnitude < radius0 + radius1;
 }
 
 export function boxInBox(
