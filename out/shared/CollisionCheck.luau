@@ -8,15 +8,15 @@
 local function CylinderInCylinder(position0, height0, radius0, position1, height1, radius1)
 	local halfHeight0 = height0 / 2
 	local halfHeight1 = height1 / 2
-	local cylinder0Min = position0.Y - halfHeight0
-	local cylinder0Max = position0.Y + halfHeight0
-	local cylinder1Min = position1.Y - halfHeight1
-	local cylinder1Max = position1.Y + halfHeight1
+	local cylinder0Min = position0.y - halfHeight0
+	local cylinder0Max = position0.y + halfHeight0
+	local cylinder1Min = position1.y - halfHeight1
+	local cylinder1Max = position1.y + halfHeight1
 	if cylinder0Min > cylinder1Max or cylinder0Max < cylinder1Min then
 		return false
 	end
-	local distX = position1.X - position0.X
-	local distZ = position1.Z - position0.Z
+	local distX = position1.x - position0.x
+	local distZ = position1.z - position0.z
 	local radiusSum = radius0 + radius1
 	--is the distance bigger than our radius*, discounting the y
 	if distX * distX + distZ * distZ > radiusSum * radiusSum then
@@ -26,9 +26,9 @@ local function CylinderInCylinder(position0, height0, radius0, position1, height
 end
 local function boxInSphere(cframe0, size0, position1, radius1)
 	local relative = cframe0:PointToObjectSpace(position1)
-	local sizeX = size0.X / 2
-	local sizeY = size0.Y / 2
-	local sizeZ = size0.Z / 2
+	local sizeX = size0.x / 2
+	local sizeY = size0.x / 2
+	local sizeZ = size0.z / 2
 	local relX = relative.X
 	local relY = relative.Y
 	local relZ = relative.Z
@@ -41,15 +41,14 @@ local function boxInSphere(cframe0, size0, position1, radius1)
 end
 local function sphereInSphere(position0, radius0, position1, radius1)
 	--is the distance between our positions bigger than our radius?
-	local _position1 = position1
-	local _position0 = position0
-	return (_position1 - _position0).Magnitude < radius0 + radius1
+	local magnitude = math.sqrt((bit32.bxor((position1.x - position0.x), 2)) + (bit32.bxor((position1.y - position0.y), 2)) + (bit32.bxor((position1.z - position0.z), 2)))
+	return magnitude < radius0 + radius1
 end
 local function boxInBox(cframe0, size0, cframe1, size1)
 	local m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11 = cframe0:GetComponents()
 	local m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23 = cframe1:GetComponents()
-	local m24, m25, m26 = size0.X / 2, size0.Y / 2, size0.Z / 2
-	local m27, m28, m29 = size1.X / 2, size1.Y / 2, size1.Z / 2
+	local m24, m25, m26 = size0.x / 2, size0.y / 2, size0.z / 2
+	local m27, m28, m29 = size1.x / 2, size1.y / 2, size1.z / 2
 	local m30, m31, m32 = m12 - m00, m13 - m01, m14 - m02
 	m00 = m03 * m30 + m06 * m31 + m09 * m32
 	m01 = m04 * m30 + m07 * m31 + m10 * m32
@@ -935,7 +934,7 @@ local function boxInBox(cframe0, size0, cframe1, size1)
 	end
 	return false
 end
--- function CollisionCheck.boxInBox(cframe0: CFrame, size0: Vector3, cframe1: CFrame, size1: Vector3): boolean
+-- function CollisionCheck.boxInBox(cframe0: CFrame, size0: vector, cframe1: CFrame, size1: vector): boolean
 -- 	 let	m00,m01,m02,
 -- 	m03,m04,m05,
 -- 	m06,m07,m08,
@@ -944,8 +943,8 @@ end
 -- 	m15,m16,m17,
 -- 	m18,m19,m20,
 -- 	m21,m22,m23	=components(cframe1)
--- 	 let	m24,m25,m26	=size0.X/2,size0.Y/2,size0.Z/2
--- 	 let	m27,m28,m29	=size1.X/2,size1.Y/2,size1.Z/2
+-- 	 let	m24,m25,m26	=size0.x/2,size0.y/2,size0.z/2
+-- 	 let	m27,m28,m29	=size1.x/2,size1.y/2,size1.z/2
 -- 	 let	m30,m31,m32	=m12-m00,m13-m01,m14-m02
 -- 	 let	m00 			=m03*m30+m06*m31+m09*m32
 -- 	 let	m01 			=m04*m30+m07*m31+m10*m32

@@ -9,19 +9,19 @@
 //const pointToObjectSpace = emptyCFrame.PointToObjectSpace;
 
 export function CylinderInCylinder(
-  position0: Vector3,
+  position0: vector,
   height0: number,
   radius0: number,
-  position1: Vector3,
+  position1: vector,
   height1: number,
   radius1: number
 ): boolean {
   const halfHeight0: number = height0 / 2;
   const halfHeight1: number = height1 / 2;
-  const cylinder0Min: number = position0.Y - halfHeight0;
-  const cylinder0Max: number = position0.Y + halfHeight0;
-  const cylinder1Min: number = position1.Y - halfHeight1;
-  const cylinder1Max: number = position1.Y + halfHeight1;
+  const cylinder0Min: number = position0.y - halfHeight0;
+  const cylinder0Max: number = position0.y + halfHeight0;
+  const cylinder1Min: number = position1.y - halfHeight1;
+  const cylinder1Max: number = position1.y + halfHeight1;
 
   if (
     //are we too far up to be hitting
@@ -31,8 +31,8 @@ export function CylinderInCylinder(
     return false;
   }
 
-  const distX: number = position1.X - position0.X;
-  const distZ: number = position1.Z - position0.Z;
+  const distX: number = position1.x - position0.x;
+  const distZ: number = position1.z - position0.z;
   const radiusSum: number = radius0 + radius1;
 
   //is the distance bigger than our radius*, discounting the y
@@ -45,14 +45,16 @@ export function CylinderInCylinder(
 
 export function boxInSphere(
   cframe0: CFrame,
-  size0: Vector3,
-  position1: Vector3,
+  size0: vector,
+  position1: vector,
   radius1: number
 ): boolean {
-  const relative: Vector3 = cframe0.PointToObjectSpace(position1);
-  const sizeX: number = size0.X / 2;
-  const sizeY: number = size0.Y / 2;
-  const sizeZ: number = size0.Z / 2;
+  const relative: Vector3 = cframe0.PointToObjectSpace(
+    position1 as unknown as Vector3
+  );
+  const sizeX: number = size0.x / 2;
+  const sizeY: number = size0.x / 2;
+  const sizeZ: number = size0.z / 2;
   const relX: number = relative.X;
   const relY: number = relative.Y;
   const relZ: number = relative.Z;
@@ -84,20 +86,25 @@ export function boxInSphere(
 }
 
 export function sphereInSphere(
-  position0: Vector3,
+  position0: vector,
   radius0: number,
-  position1: Vector3,
+  position1: vector,
   radius1: number
 ): boolean {
   //is the distance between our positions bigger than our radius?
-  return position1.sub(position0).Magnitude < radius0 + radius1;
+  const magnitude = math.sqrt(
+    ((position1.x - position0.x) ^ 2) +
+      ((position1.y - position0.y) ^ 2) +
+      ((position1.z - position0.z) ^ 2)
+  );
+  return magnitude < radius0 + radius1;
 }
 
 export function boxInBox(
   cframe0: CFrame,
-  size0: Vector3,
+  size0: vector,
   cframe1: CFrame,
-  size1: Vector3
+  size1: vector
 ): boolean {
   let [
     m00,
@@ -130,14 +137,14 @@ export function boxInBox(
   ] = cframe1.GetComponents();
 
   const [m24, m25, m26]: [number, number, number] = [
-    size0.X / 2,
-    size0.Y / 2,
-    size0.Z / 2
+    size0.x / 2,
+    size0.y / 2,
+    size0.z / 2
   ];
   const [m27, m28, m29]: [number, number, number] = [
-    size1.X / 2,
-    size1.Y / 2,
-    size1.Z / 2
+    size1.x / 2,
+    size1.y / 2,
+    size1.z / 2
   ];
   let [m30, m31, m32]: [number, number, number] = [
     m12 - m00,
@@ -1037,7 +1044,7 @@ export function boxInBox(
   return false;
 }
 
-// function CollisionCheck.boxInBox(cframe0: CFrame, size0: Vector3, cframe1: CFrame, size1: Vector3): boolean
+// function CollisionCheck.boxInBox(cframe0: CFrame, size0: vector, cframe1: CFrame, size1: vector): boolean
 // 	 let	m00,m01,m02,
 // 	m03,m04,m05,
 // 	m06,m07,m08,
@@ -1046,8 +1053,8 @@ export function boxInBox(
 // 	m15,m16,m17,
 // 	m18,m19,m20,
 // 	m21,m22,m23	=components(cframe1)
-// 	 let	m24,m25,m26	=size0.X/2,size0.Y/2,size0.Z/2
-// 	 let	m27,m28,m29	=size1.X/2,size1.Y/2,size1.Z/2
+// 	 let	m24,m25,m26	=size0.x/2,size0.y/2,size0.z/2
+// 	 let	m27,m28,m29	=size1.x/2,size1.y/2,size1.z/2
 // 	 let	m30,m31,m32	=m12-m00,m13-m01,m14-m02
 // 	 let	m00 			=m03*m30+m06*m31+m09*m32
 // 	 let	m01 			=m04*m30+m07*m31+m10*m32
