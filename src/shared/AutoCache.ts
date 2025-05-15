@@ -12,7 +12,7 @@ const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
 const allCaches: AutoCache[] = [];
 //const MAX_CACHED_INSTANCES = 9000;
 export const rates = {
-  increase: 2
+  increase: 5
 };
 export class AutoCache {
   public template: Cacheable = undefined as unknown as Cacheable;

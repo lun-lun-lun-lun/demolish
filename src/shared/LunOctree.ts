@@ -19,7 +19,7 @@ const templatePart = new Instance('Part');
 templatePart.Parent = Workspace;
 templatePart.Anchored = true;
 templatePart.CanCollide = false;
-templatePart.Transparency = 0.5;
+templatePart.Transparency = 0.2;
 templatePart.CastShadow = false;
 templatePart.Shape = Enum.PartType.Block;
 

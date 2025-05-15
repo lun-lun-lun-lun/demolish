@@ -28,7 +28,7 @@ const times = [];
 for (let i = 0; i < 300; i++) {
   const position = [
     math.random(-50, 50),
-    math.random(-25, 50),
+    math.random(-10, 80),
     math.random(-50, 50)
   ];
   const size = [
