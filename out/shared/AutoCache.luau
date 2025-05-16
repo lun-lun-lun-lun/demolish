@@ -9,7 +9,7 @@ local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
 local allCaches = {}
 --const MAX_CACHED_INSTANCES = 9000;
 local rates = {
-	increase = 2,
+	increase = 5,
 }
 local AutoCache
 do

@@ -2,24 +2,24 @@
 //!optimize 2
 
 import { Workspace } from '@rbxts/services';
-import { InstanceCache } from 'shared/InstanceCache';
+import { AutoCache } from 'shared/AutoCache';
 import { boxInSphere } from './CollisionCheck';
 import { sphereInSphere } from './CollisionCheck';
 import { boxInBox } from './CollisionCheck';
 
 //Types in TS us PascalCase
-type NewVector3 = ReturnType<typeof vector.create>;
 type Vector3Table = { x: number; y: number; z: number };
 type Vector3Tuple = [number, number, number];
 type OctreeDetected = [Instance] | [];
 type ShapeTypes = 'box' | 'sphere';
 
-const EmptyVector3 = vector.create(0, 0, 0);
+const EMPTY_VECTOR = vector.create(0, 0, 0);
+const EMPTY_CFRAME = new CFrame(0, 0, 0);
 const templatePart = new Instance('Part');
 templatePart.Parent = Workspace;
 templatePart.Anchored = true;
 templatePart.CanCollide = false;
-templatePart.Transparency = 0.2;
+templatePart.Transparency = 0.5;
 templatePart.CastShadow = false;
 templatePart.Shape = Enum.PartType.Block;
 
@@ -61,20 +61,18 @@ const dualtreeDivisionPositions = [
   newVector(0, 0, 0)
 ];
 
-const partCache = new InstanceCache(
-  templatePart,
-  500,
-  undefined,
-  50
-);
+const partCache = new AutoCache(templatePart, 500, undefined);
 //since I have to use OOP, i'll use it for this
-export class OctreeNode {
+export class OctreeNode<containType> {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
-  public position: NewVector3;
-  public size: NewVector3;
+  public cFrame: CFrame = EMPTY_CFRAME;
+  public size: vector = EMPTY_VECTOR;
+  //public contains: Map<NewVector3, containType> = new Map();
+  //public shape: ShapeTypes = 'box';
   constructor(
-    position: NewVector3,
-    size: NewVector3
+    cFrame: CFrame,
+    size: vector
+    //shape: ShapeTypes
     //depth: number,
     //maxDepth: number,
     //minSize: number,
@@ -84,8 +82,10 @@ export class OctreeNode {
   ) {
     //const newVector: vector = vector.create(x, y, z);
 
-    this.position = position;
+    this.cFrame = cFrame; //need cframes so I can use ToWorldSpace and position stuff sensibly.
     this.size = size;
+    //this.shape = shape;
+
     // this.maxDepth = maxDepth;
     // this.minSize = minSize;
     // this.lenientMinSize = lenient;
@@ -93,7 +93,7 @@ export class OctreeNode {
     // this.originNode = originNode;
     // this.parentNode = parentNode;
     //show a visual representation
-    //this.display('Block');
+    // this.display('Block');
   }
 
   display(shape: 'Block' | 'Ball') {
@@ -104,19 +104,18 @@ export class OctreeNode {
       math.random(1, 255),
       math.random(1, 255)
     );
-    nodePart.Position = vectorToVector3(this.position);
-    nodePart.Size = vectorToVector3(this.size);
+    nodePart.CFrame = this.cFrame;
+    nodePart.Size = this.size as unknown as Vector3;
     nodePart.Parent = Workspace;
     nodePart.Shape = Enum.PartType[shape];
   }
 
-  divideOctree(
-    positionReference: vector,
-    timesToDivide: number,
-    currentDivision: number | undefined
-  ) {
+  divideOctree(timesToDivide: number, currentDivision?: number) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
+    // const childNodes: { [key: string]: OctreeNode } =
+    //   {} as unknown as { [key: string]: OctreeNode };
+    const childNodes = new Map<Vector3, OctreeNode<unknown>>();
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [
@@ -125,73 +124,124 @@ export class OctreeNode {
       sizeZ / 2
     ];
     const [offsetX, offsetY, offsetZ] = [
-      -stepX / 2 + positionReference.x,
-      positionReference.y - stepY / 2,
-      -stepZ / 2 + positionReference.z
+      -stepX / 2,
+      -stepY / 2,
+      -stepZ / 2
     ];
     const newSize = newVector(stepX, stepY, stepZ);
 
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
-      const newPosition = newVector(
+      const positionOffset = new CFrame(
         stepChange.x * stepX + offsetX,
         stepChange.y * stepY + offsetY,
         stepChange.z * stepZ + offsetZ
       );
-      const newNode = new OctreeNode(newPosition, newSize);
-      //this.childNodes.push(newNode);
-      //task.wait();
+      const newCframe = this.cFrame.ToWorldSpace(positionOffset);
+      const newNode = new OctreeNode(newCframe, newSize);
+      const newPosition = newCframe.Position;
+      childNodes.set(newPosition, newNode);
+
       const realCurrentDivision =
         currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
-        newNode.divideOctree(
-          //this.position,
-          newPosition,
-          1,
-          realCurrentDivision + 1
-        );
+        newNode.divideOctree(1, realCurrentDivision + 1);
       }
     }
-    print('Done building octree.');
+    return childNodes;
+  }
+}
+
+type sizeType = vector | number;
+export class SpheretreeNode extends OctreeNode<Part> {
+  public contains: Map<vector, Part> = new Map();
+  public shape: ShapeTypes = 'box';
+  public depth = 0;
+  public depthLimit = 3;
+  public divisionThreshold = 0;
+  public radius: number;
+  //public shape: ShapeTypes = 'box';z
+  constructor(
+    cFrame: CFrame,
+    radius: number,
+    shape: ShapeTypes,
+    divisionThreshold: number = 5,
+    depthLimit: number = 5,
+    contains?: Map<vector, Part>,
+    depth?: number
+  ) {
+    //const newVector: vector = vector.create(x, y, z);
+    super(cFrame, vector.create(radius, radius, radius));
+    this.shape = shape;
+    this.radius = radius;
+    this.divisionThreshold = divisionThreshold;
+    this.depthLimit = depthLimit;
+    if (contains !== undefined) {
+      this.contains = contains;
+    }
+    if (depth !== undefined) {
+      this.depth = depth;
+    }
+  }
+  _insert(position: vector, item: Part) {
+    this.contains.set(position, item as Part);
+    //if too many objects, divide
+  }
+
+  tryInsert(
+    itemPosition: vector | CFrame,
+    itemSize: vector | number,
+    itemShape: ShapeTypes,
+    itemToInsert: Part
+  ) {
+    let touching = false;
+    if (itemShape === 'box') {
+      //e
+      touching = boxInSphere(
+        itemPosition as CFrame,
+        itemSize as vector,
+        this.cFrame.Position as unknown as vector,
+        this.radius
+      );
+    } else if (itemShape === 'sphere') {
+      touching = sphereInSphere(
+        itemPosition as vector,
+        itemSize as number,
+        this.cFrame.Position as unknown as vector,
+        this.radius
+      );
+    }
   }
 
   query(
-    hitboxShape: ShapeTypes,
-    hitboxPosition: NewVector3,
-    hitboxRotation: NewVector3,
-    hitboxSize: NewVector3,
-    octreeShape: ShapeTypes //treat each position as a sphere, or a cube?
+    hitboxCframe: CFrame,
+    hitboxSize: vector,
+    hitboxShape: ShapeTypes
   ) {
-    if (octreeShape === 'sphere') {
-      //sphere
-    } else {
-      //box
+    for (const item of this.contains) {
+      //collision checker logic
     }
-    //spherical octree for querying
-    //makes more sense for my weird OBBs
-    //Dynamic BVH would also make sense to do for hitbox queries, but nahhhh... too long to make.
-    //less computational cost per query that way
-    //skip to lowest octree children? No, there'd be too many to calculate, it'd be unnecessary
   }
 }
 
 export function Create(
-  px: number,
-  py: number,
-  pz: number,
-  sx: number,
-  sy: number,
-  sz: number,
-  maxDepth: number,
-  minSize: number,
-  lenientMinSize: boolean
+  cFrame: CFrame,
+  size: vector
+  // sx: number,
+  // sy: number,
+  // sz: number,
+  // maxDepth: number,
+  // minSize: number,
+  // lenientMinSize: boolean
+  //shape: ShapeTypes
 ) {
   //do sum
-  const position: NewVector3 = vector.create(px, py, pz);
-  const size: NewVector3 = vector.create(sx, sy, sz);
+  //const position: NewVector3 = vector.create(px, py, pz);
+  // const size: NewVector3 = vector.create(sx, sy, sz);
   const newOctree = new OctreeNode(
-    position,
+    cFrame,
     size
+    //shape
     // 0,
     // maxDepth,
     // minSize,
