@@ -49,9 +49,7 @@ export function boxInSphere(
   position1: vector,
   radius1: number
 ): boolean {
-  const relative: Vector3 = cframe0.PointToObjectSpace(
-    position1 as unknown as Vector3
-  );
+  const relative: Vector3 = cframe0.PointToObjectSpace(position1 as unknown as Vector3);
   const sizeX: number = size0.x / 2;
   const sizeY: number = size0.x / 2;
   const sizeZ: number = size0.z / 2;
@@ -61,28 +59,10 @@ export function boxInSphere(
 
   //very ugly to look at unfortunately, but a potential computation skip
   //also eslint is being very annoying && i wish i could specify the newline thing not to be forced
-  const distX: number =
-    relX > sizeX
-      ? relX - sizeX
-      : relX < -sizeX
-        ? relX + sizeX
-        : 0;
-  const distY: number =
-    relY > sizeY
-      ? relY - sizeY
-      : relY < -sizeY
-        ? relY + sizeY
-        : 0;
-  const distZ: number =
-    relZ > sizeZ
-      ? relZ - sizeZ
-      : relZ < -sizeZ
-        ? relZ + sizeZ
-        : 0;
-  return (
-    distX * distX + distY * distY + distZ * distZ <
-    radius1 * radius1
-  );
+  const distX: number = relX > sizeX ? relX - sizeX : relX < -sizeX ? relX + sizeX : 0;
+  const distY: number = relY > sizeY ? relY - sizeY : relY < -sizeY ? relY + sizeY : 0;
+  const distZ: number = relZ > sizeZ ? relZ - sizeZ : relZ < -sizeZ ? relZ + sizeZ : 0;
+  return distX * distX + distY * distY + distZ * distZ < radius1 * radius1;
 }
 
 export function sphereInSphere(
@@ -121,20 +101,8 @@ export function boxInBox(
     m10,
     m11
   ] = cframe0.GetComponents();
-  let [
-    m12,
-    m13,
-    m14,
-    m15,
-    m16,
-    m17,
-    m18,
-    m19,
-    m20,
-    m21,
-    m22,
-    m23
-  ] = cframe1.GetComponents();
+  let [m12, m13, m14, m15, m16, m17, m18, m19, m20, m21, m22, m23] =
+    cframe1.GetComponents();
 
   const [m24, m25, m26]: [number, number, number] = [
     size0.x / 2,
@@ -146,11 +114,7 @@ export function boxInBox(
     size1.y / 2,
     size1.z / 2
   ];
-  let [m30, m31, m32]: [number, number, number] = [
-    m12 - m00,
-    m13 - m01,
-    m14 - m02
-  ];
+  let [m30, m31, m32]: [number, number, number] = [m12 - m00, m13 - m01, m14 - m02];
   m00 = m03 * m30 + m06 * m31 + m09 * m32;
   m01 = m04 * m30 + m07 * m31 + m10 * m32;
   m12 = m15 * m30 + m18 * m31 + m21 * m32;
@@ -164,10 +128,8 @@ export function boxInBox(
   let m35 = m02 > m26 ? m02 - m26 : m02 < -m26 ? m02 + m26 : 0;
   const m36 = m30 * m30 + m31 * m31 + m32 * m32;
   m30 = m33 * m33 + m34 * m34 + m35 * m35;
-  m31 =
-    m24 < m25 ? (m24 < m26 ? m24 : m26) : m25 < m26 ? m25 : m26;
-  m32 =
-    m27 < m28 ? (m27 < m29 ? m27 : m29) : m28 < m29 ? m28 : m29;
+  m31 = m24 < m25 ? (m24 < m26 ? m24 : m26) : m25 < m26 ? m25 : m26;
+  m32 = m27 < m28 ? (m27 < m29 ? m27 : m29) : m28 < m29 ? m28 : m29;
 
   //for context, the guy that wrote the original code is an actual genius mathematician. i have no idea what any of these calculations signify or how they work.
   //i asked the dude who showed me this and he doesn't know either. its faster than the built in roblox methods, and established algorithms like GJK and EPA

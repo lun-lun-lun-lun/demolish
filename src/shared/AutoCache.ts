@@ -21,11 +21,7 @@ export class AutoCache {
   public cframeTable: CFrame[] = [] as unknown as CFrame[];
   public maximum: number = 9999;
   public usedThisHeartbeat: boolean = false; //eventually will be changed for a more robust analysis
-  constructor(
-    template: Cacheable,
-    amount: number,
-    position: vector | undefined
-  ) {
+  constructor(template: Cacheable, amount: number, position: vector | undefined) {
     this.template = template;
     //if you gave a position, we'll use it
     this.hiddenCframe =
@@ -55,10 +51,7 @@ export class AutoCache {
       //item.CanCollide = false;
     } else {
       for (const subItem of item.GetDescendants()) {
-        if (
-          subItem.IsA('Part') === true &&
-          subItem.Anchored === false
-        ) {
+        if (subItem.IsA('Part') === true && subItem.Anchored === false) {
           subItem.Anchored = true;
         }
       }
@@ -73,10 +66,7 @@ export class AutoCache {
       item.Anchored = true;
     } else {
       for (const subItem of item.GetDescendants()) {
-        if (
-          subItem.IsA('Part') === true &&
-          subItem.Anchored === false
-        ) {
+        if (subItem.IsA('Part') === true && subItem.Anchored === false) {
           subItem.Anchored = true;
         }
       }
@@ -133,10 +123,7 @@ RunService.Heartbeat.Connect(function (deltaTime) {
     const cacheUsed = iCache.usedThisHeartbeat;
     if (cacheUsed === true) {
       iCache.usedThisHeartbeat = false;
-    } else if (
-      cacheUsed === false &&
-      iCache.cache.size() < iCache.maximum
-    ) {
+    } else if (cacheUsed === false && iCache.cache.size() < iCache.maximum) {
       const increase =
         iCache.cache.size() + rates.increase > iCache.maximum
           ? iCache.maximum - iCache.cache.size()

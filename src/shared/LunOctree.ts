@@ -118,16 +118,8 @@ export class OctreeNode<containType> {
     const childNodes = new Map<Vector3, OctreeNode<unknown>>();
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
-    const [stepX, stepY, stepZ] = [
-      sizeX / 2,
-      sizeY / 2,
-      sizeZ / 2
-    ];
-    const [offsetX, offsetY, offsetZ] = [
-      -stepX / 2,
-      -stepY / 2,
-      -stepZ / 2
-    ];
+    const [stepX, stepY, stepZ] = [sizeX / 2, sizeY / 2, sizeZ / 2];
+    const [offsetX, offsetY, offsetZ] = [-stepX / 2, -stepY / 2, -stepZ / 2];
     const newSize = newVector(stepX, stepY, stepZ);
 
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
@@ -142,8 +134,7 @@ export class OctreeNode<containType> {
       const newPosition = newCframe.Position;
       childNodes.set(newPosition, newNode);
 
-      const realCurrentDivision =
-        currentDivision !== undefined ? currentDivision : 1;
+      const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
         newNode.divideOctree(1, realCurrentDivision + 1);
       }
@@ -213,11 +204,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     }
   }
 
-  query(
-    hitboxCframe: CFrame,
-    hitboxSize: vector,
-    hitboxShape: ShapeTypes
-  ) {
+  query(hitboxCframe: CFrame, hitboxSize: vector, hitboxShape: ShapeTypes) {
     for (const item of this.contains) {
       //collision checker logic
     }

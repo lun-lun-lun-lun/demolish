@@ -29,23 +29,11 @@ cacheControl.increase = 0;
 const times = [];
 const TESTS = 5;
 for (let i = 0; i < TESTS; i++) {
-  const position = [
-    math.random(-50, 50),
-    math.random(-25, 50),
-    math.random(-50, 50)
-  ];
-  const size = [
-    math.random(min, max),
-    math.random(min, max),
-    math.random(min, max)
-  ];
+  const position = [math.random(-50, 50), math.random(-25, 50), math.random(-50, 50)];
+  const size = [math.random(min, max), math.random(min, max), math.random(min, max)];
   let cFrame = new CFrame(position[0], position[1], position[2]);
   cFrame = cFrame.ToObjectSpace(
-    CFrame.Angles(
-      math.random(1, 10),
-      math.random(1, 10),
-      math.random(1, 10)
-    )
+    CFrame.Angles(math.random(1, 10), math.random(1, 10), math.random(1, 10))
   );
   const startTime = os.clock();
   const testOctree = LunOctree.create(
