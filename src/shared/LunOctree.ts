@@ -110,12 +110,12 @@ export class OctreeNode<containType> {
     nodePart.Shape = Enum.PartType[shape];
   }
 
-  divideOctree(timesToDivide: number, currentDivision?: number) {
+  divideOctree<insertType>(timesToDivide: number, currentDivision?: number) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
     // const childNodes: { [key: string]: OctreeNode } =
     //   {} as unknown as { [key: string]: OctreeNode };
-    const childNodes = new Map<Vector3, OctreeNode<unknown>>();
+    const childNodes = new Map<vector, OctreeNode<insertType>>();
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [sizeX / 2, sizeY / 2, sizeZ / 2];
@@ -132,7 +132,7 @@ export class OctreeNode<containType> {
       const newCframe = this.cFrame.ToWorldSpace(positionOffset);
       const newNode = new OctreeNode(newCframe, newSize);
       const newPosition = newCframe.Position;
-      childNodes.set(newPosition, newNode);
+      childNodes.set(newPosition as unknown as vector, newNode);
 
       const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
@@ -145,11 +145,12 @@ export class OctreeNode<containType> {
 
 type sizeType = vector | number;
 export class SpheretreeNode extends OctreeNode<Part> {
+  public childNodes: Map<vector, OctreeNode<Part>> = new Map();
   public contains: Map<vector, Part> = new Map();
   public shape: ShapeTypes = 'box';
   public depth = 0;
   public depthLimit = 3;
-  public divisionThreshold = 0;
+  public divisionThreshold = 10; //this was zero before and would have obliterated my pc lmao
   public radius: number;
   //public shape: ShapeTypes = 'box';z
   constructor(
@@ -177,24 +178,30 @@ export class SpheretreeNode extends OctreeNode<Part> {
   _insert(position: vector, item: Part) {
     this.contains.set(position, item as Part);
     //if too many objects, divide
+    if (this.contains.size() > this.divisionThreshold) {
+      this.childNodes = this.divideOctree<Part>(1, 0);
+    }
   }
 
   tryInsert(
-    itemPosition: vector | CFrame,
+    itemLocation: vector | CFrame,
     itemSize: vector | number,
     itemShape: ShapeTypes,
     itemToInsert: Part
   ) {
     let touching = false;
+    let itemPosition;
+
     if (itemShape === 'box') {
-      //e
+      itemPosition = (itemLocation as CFrame).Position as unknown as vector;
       touching = boxInSphere(
-        itemPosition as CFrame,
+        itemLocation as CFrame,
         itemSize as vector,
         this.cFrame.Position as unknown as vector,
         this.radius
       );
     } else if (itemShape === 'sphere') {
+      itemPosition = itemLocation as vector;
       touching = sphereInSphere(
         itemPosition as vector,
         itemSize as number,
@@ -202,12 +209,64 @@ export class SpheretreeNode extends OctreeNode<Part> {
         this.radius
       );
     }
+    if (touching === true) {
+      this._insert(itemPosition as vector, itemToInsert);
+    }
   }
 
   query(hitboxCframe: CFrame, hitboxSize: vector, hitboxShape: ShapeTypes) {
     for (const item of this.contains) {
       //collision checker logic
     }
+  }
+
+  divideOctree<insertType>(timesToDivide: number, currentDivision?: number) {
+    //these values are defined here so they dont have to be searched for 8 times in the loop
+    //is this a microoptimization? perhaps
+    // const childNodes: { [key: string]: OctreeNode } =
+    //   {} as unknown as { [key: string]: OctreeNode };
+    const [cFrame, radius, shape, divisionThreshold, depthLimit, contains, depth] = [
+      this.cFrame,
+      this.radius,
+      this.shape,
+      this.divisionThreshold,
+      this.depthLimit,
+      this.contains,
+      this.depth + 1
+    ];
+    const childNodes = new Map<vector, SpheretreeNode>();
+    const size = this.size;
+    const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
+    const [stepX, stepY, stepZ] = [sizeX / 2, sizeY / 2, sizeZ / 2];
+    const [offsetX, offsetY, offsetZ] = [-stepX / 2, -stepY / 2, -stepZ / 2];
+    const newSize = newVector(stepX, stepY, stepZ);
+
+    //create 8 properly sized, equally spaced nodes within the AABB of the Octree
+    for (const stepChange of octreeDivisionPositions) {
+      const positionOffset = new CFrame(
+        stepChange.x * stepX + offsetX,
+        stepChange.y * stepY + offsetY,
+        stepChange.z * stepZ + offsetZ
+      );
+      const newCframe = this.cFrame.ToWorldSpace(positionOffset);
+      const newNode = new SpheretreeNode(
+        cFrame,
+        radius,
+        shape,
+        divisionThreshold,
+        depth,
+        contains,
+        depth
+      );
+      const newPosition = newCframe.Position;
+      childNodes.set(newPosition as unknown as vector, newNode);
+
+      const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
+      if (realCurrentDivision < timesToDivide) {
+        newNode.divideOctree(1, realCurrentDivision + 1);
+      }
+    }
+    return childNodes;
   }
 }
 
