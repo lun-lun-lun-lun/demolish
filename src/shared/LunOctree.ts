@@ -177,9 +177,13 @@ export class SpheretreeNode extends OctreeNode<Part> {
   }
   _insert(position: vector, item: Part) {
     this.contains.set(position, item as Part);
+
     //if too many objects, divide
-    if (this.contains.size() > this.divisionThreshold) {
-      this.childNodes = this.divideOctree<Part>(1, 0);
+    if (
+      this.contains.size() > this.divisionThreshold &&
+      this.depth + 1 <= this.depthLimit
+    ) {
+      this.childNodes = this.divideOctree<Part>();
     }
   }
 
@@ -220,7 +224,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     }
   }
 
-  divideOctree<insertType>(timesToDivide: number, currentDivision?: number) {
+  divideOctree<insertType>() {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
     // const childNodes: { [key: string]: OctreeNode } =
@@ -255,16 +259,24 @@ export class SpheretreeNode extends OctreeNode<Part> {
         shape,
         divisionThreshold,
         depth,
-        contains,
-        depth
+        new Map(),
+        depth + 1
       );
       const newPosition = newCframe.Position;
       childNodes.set(newPosition as unknown as vector, newNode);
 
-      const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
-      if (realCurrentDivision < timesToDivide) {
-        newNode.divideOctree(1, realCurrentDivision + 1);
+      //i dont like how this is done, i
+      //Check items inside parent and add if inside child too
+      for (const [position, item] of contains) {
+        //for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
+        this.tryInsert(position, item.Size as unknown as vector, 'sphere', item);
       }
+
+      //cut because unneeded?
+      // const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
+      // if (realCurrentDivision < timesToDivide) {
+      //   newNode.divideOctree(1, realCurrentDivision + 1);
+      // }
     }
     return childNodes;
   }
