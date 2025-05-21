@@ -124,11 +124,12 @@ do
 		end
 		--const newVector: vector = vector.create(x, y, z);
 		super.constructor(self, cFrame, vector.create(radius, radius, radius))
+		self.childNodes = {}
 		self.contains = {}
 		self.shape = "box"
 		self.depth = 0
 		self.depthLimit = 3
-		self.divisionThreshold = 0
+		self.divisionThreshold = 10
 		self.shape = shape
 		self.radius = radius
 		self.divisionThreshold = divisionThreshold
@@ -146,14 +147,32 @@ do
 		local _item = item
 		_contains[_position] = _item
 		--if too many objects, divide
+		-- ▼ ReadonlyMap.size ▼
+		local _size = 0
+		for _ in self.contains do
+			_size += 1
+		end
+		-- ▲ ReadonlyMap.size ▲
+		local _condition = _size > self.divisionThreshold
+		if _condition then
+			_condition = self.depth + 1 <= self.depthLimit
+		end
+		if _condition then
+			self.childNodes = self:divideOctree()
+		end
 	end
-	function SpheretreeNode:tryInsert(itemPosition, itemSize, itemShape, itemToInsert)
+	function SpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)
 		local touching = false
+		local itemPosition
 		if itemShape == "box" then
-			--e
-			touching = boxInSphere(itemPosition, itemSize, self.cFrame.Position, self.radius)
+			itemPosition = itemLocation.Position
+			touching = boxInSphere(itemLocation, itemSize, self.cFrame.Position, self.radius)
 		elseif itemShape == "sphere" then
+			itemPosition = itemLocation
 			touching = sphereInSphere(itemPosition, itemSize, self.cFrame.Position, self.radius)
+		end
+		if touching == true then
+			self:_insert(itemPosition, itemToInsert)
 		end
 	end
 	function SpheretreeNode:query(hitboxCframe, hitboxSize, hitboxShape)
@@ -161,6 +180,39 @@ do
 			local item = { _k, _v }
 			--collision checker logic
 		end
+	end
+	function SpheretreeNode:divideOctree()
+		--these values are defined here so they dont have to be searched for 8 times in the loop
+		--is this a microoptimization? perhaps
+		-- const childNodes: { [key: string]: OctreeNode } =
+		--   {} as unknown as { [key: string]: OctreeNode };
+		local cFrame, radius, shape, divisionThreshold, depthLimit, contains, depth = self.cFrame, self.radius, self.shape, self.divisionThreshold, self.depthLimit, self.contains, self.depth + 1
+		local childNodes = {}
+		local size = self.size
+		local sizeX, sizeY, sizeZ = size.x, size.y, size.z
+		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
+		local offsetX, offsetY, offsetZ = -stepX / 2, -stepY / 2, -stepZ / 2
+		local newSize = newVector(stepX, stepY, stepZ)
+		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
+		for _, stepChange in octreeDivisionPositions do
+			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
+			local newCframe = self.cFrame:ToWorldSpace(positionOffset)
+			local newNode = SpheretreeNode.new(cFrame, radius, shape, divisionThreshold, depth, {}, depth + 1)
+			local newPosition = newCframe.Position
+			childNodes[newPosition] = newNode
+			--i dont like how this is done, i
+			--Check items inside parent and add if inside child too
+			for position, item in contains do
+				--for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
+				self:tryInsert(position, item.Size, "sphere", item)
+			end
+			--cut because unneeded?
+			-- const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
+			-- if (realCurrentDivision < timesToDivide) {
+			--   newNode.divideOctree(1, realCurrentDivision + 1);
+			-- }
+		end
+		return childNodes
 	end
 end
 local function Create(cFrame, size)
