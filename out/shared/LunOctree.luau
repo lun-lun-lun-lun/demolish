@@ -141,6 +141,11 @@ do
 			self.depth = depth
 		end
 	end
+	function SpheretreeNode:_update(item, newPosition)
+		--
+	end
+	function SpheretreeNode:_remove(position, item)
+	end
 	function SpheretreeNode:_insert(position, item)
 		local _contains = self.contains
 		local _position = position
@@ -160,6 +165,11 @@ do
 		if _condition then
 			self.childNodes = self:divideOctree()
 		end
+		--since we approximate all objs into their bounding radiuses, we don't care about the rotation.
+		--in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
+		item:GetPropertyChangedSignal("Position"):Connect(function()
+			--
+		end)
 	end
 	function SpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)
 		local touching = false
@@ -197,14 +207,15 @@ do
 		for _, stepChange in octreeDivisionPositions do
 			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
 			local newCframe = self.cFrame:ToWorldSpace(positionOffset)
-			local newNode = SpheretreeNode.new(cFrame, radius, shape, divisionThreshold, depth, {}, depth + 1)
+			local newNode = SpheretreeNode.new(cFrame, radius / 4, shape, divisionThreshold, depth, {}, depth + 1)
 			local newPosition = newCframe.Position
 			childNodes[newPosition] = newNode
 			--i dont like how this is done, i
 			--Check items inside parent and add if inside child too
 			for position, item in contains do
+				local itemSize = item.Size
 				--for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
-				self:tryInsert(position, item.Size, "sphere", item)
+				self:tryInsert(position, math.max(itemSize.X, itemSize.Y, itemSize.Z), "sphere", item)
 			end
 			--cut because unneeded?
 			-- const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;

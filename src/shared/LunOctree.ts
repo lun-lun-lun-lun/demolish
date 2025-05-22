@@ -175,6 +175,13 @@ export class SpheretreeNode extends OctreeNode<Part> {
       this.depth = depth;
     }
   }
+
+  _update(item: Part, newPosition: vector) {
+    //
+  }
+
+  _remove(position: vector, item: Part) {}
+
   _insert(position: vector, item: Part) {
     this.contains.set(position, item as Part);
 
@@ -185,6 +192,12 @@ export class SpheretreeNode extends OctreeNode<Part> {
     ) {
       this.childNodes = this.divideOctree<Part>();
     }
+
+    //since we approximate all objs into their bounding radiuses, we don't care about the rotation.
+    //in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
+    item.GetPropertyChangedSignal('Position').Connect(function () {
+      //
+    });
   }
 
   tryInsert(
@@ -255,7 +268,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
       const newCframe = this.cFrame.ToWorldSpace(positionOffset);
       const newNode = new SpheretreeNode(
         cFrame,
-        radius,
+        radius / 4,
         shape,
         divisionThreshold,
         depth,
@@ -267,9 +280,16 @@ export class SpheretreeNode extends OctreeNode<Part> {
 
       //i dont like how this is done, i
       //Check items inside parent and add if inside child too
+
       for (const [position, item] of contains) {
+        const itemSize = item.Size;
         //for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
-        this.tryInsert(position, item.Size as unknown as vector, 'sphere', item);
+        this.tryInsert(
+          position,
+          math.max(itemSize.X, itemSize.Y, itemSize.Z) as unknown as number,
+          'sphere',
+          item
+        );
       }
 
       //cut because unneeded?
