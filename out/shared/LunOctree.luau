@@ -165,10 +165,20 @@ do
 		if _condition then
 			self.childNodes = self:divideOctree()
 		end
+		--its not letting me reference 'this' inside of the position change function, so mean
+		local nodePosition = self.cFrame.Position
+		local nodeRadius = self.radius
 		--since we approximate all objs into their bounding radiuses, we don't care about the rotation.
 		--in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
 		item:GetPropertyChangedSignal("Position"):Connect(function()
-			--
+			local itemPosition = item.Position
+			local vectorDifference = nodePosition - itemPosition
+			local distance = vectorDifference.Magnitude
+			--since the spheres will overlap, I need to divide the node radius by the overlap and create a check for that as well.
+			--im jsut guessingone what the overlap will be
+			if distance > nodeRadius + nodeRadius / math.pi then
+				--
+			end
 		end)
 	end
 	function SpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)

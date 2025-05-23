@@ -154,6 +154,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
   public radius: number;
   //public shape: ShapeTypes = 'box';z
   constructor(
+    //might change from cframe to position now that this is a spheretree?
     cFrame: CFrame,
     radius: number,
     shape: ShapeTypes,
@@ -192,11 +193,20 @@ export class SpheretreeNode extends OctreeNode<Part> {
     ) {
       this.childNodes = this.divideOctree<Part>();
     }
-
+    //its not letting me reference 'this' inside of the position change function, so mean
+    const nodePosition = this.cFrame.Position;
+    const nodeRadius = this.radius; //should make sure radius isn't being used or set as diameter in places
     //since we approximate all objs into their bounding radiuses, we don't care about the rotation.
     //in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
     item.GetPropertyChangedSignal('Position').Connect(function () {
-      //
+      const itemPosition = item.Position;
+      const vectorDifference = nodePosition.sub(itemPosition);
+      const distance = vectorDifference.Magnitude;
+      //since the spheres will overlap, I need to divide the node radius by the overlap and create a check for that as well.
+      //im jsut guessingone what the overlap will be
+      if (distance > nodeRadius + nodeRadius / math.pi) {
+        //
+      }
     });
   }
 
