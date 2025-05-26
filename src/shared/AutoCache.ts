@@ -8,11 +8,11 @@ import { Spawn } from 'shared/SpawnTs';
 type NewVector = ReturnType<typeof vector.create>;
 type Cacheable = Part | Model;
 const FAR = 9999;
-const DEFAULT_CACHE_POSITION = new CFrame(0, FAR, 0);
+const DEFAULT_CACHE_POSITION = new CFrame(FAR, FAR, FAR);
 const allCaches: AutoCache[] = [];
 //const MAX_CACHED_INSTANCES = 9000;
 export const rates = {
-  increase: 5
+  increase: 2
 };
 export class AutoCache {
   public template: Cacheable = undefined as unknown as Cacheable;

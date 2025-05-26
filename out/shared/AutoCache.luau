@@ -5,11 +5,11 @@ local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_incl
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
 local FAR = 9999
-local DEFAULT_CACHE_POSITION = CFrame.new(0, FAR, 0)
+local DEFAULT_CACHE_POSITION = CFrame.new(FAR, FAR, FAR)
 local allCaches = {}
 --const MAX_CACHED_INSTANCES = 9000;
 local rates = {
-	increase = 5,
+	increase = 2,
 }
 local AutoCache
 do

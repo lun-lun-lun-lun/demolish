@@ -163,6 +163,7 @@ do
 			_condition = self.depth + 1 <= self.depthLimit
 		end
 		if _condition then
+			print("UNDERLIMIT")
 			self.childNodes = self:divideOctree()
 		end
 		--its not letting me reference 'this' inside of the position change function, so mean
@@ -171,6 +172,7 @@ do
 		--since we approximate all objs into their bounding radiuses, we don't care about the rotation.
 		--in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
 		item:GetPropertyChangedSignal("Position"):Connect(function()
+			print("pos change")
 			local itemPosition = item.Position
 			local vectorDifference = nodePosition - itemPosition
 			local distance = vectorDifference.Magnitude
@@ -182,6 +184,7 @@ do
 		end)
 	end
 	function SpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)
+		print("INSERT ATTEMPT")
 		local touching = false
 		local itemPosition
 		if itemShape == "box" then
@@ -196,10 +199,9 @@ do
 		end
 	end
 	function SpheretreeNode:query(hitboxCframe, hitboxSize, hitboxShape)
-		for _k, _v in self.contains do
-			local item = { _k, _v }
-			--collision checker logic
-		end
+		-- for (const item of this.contains) {
+		--   //collision checker logic
+		-- }
 	end
 	function SpheretreeNode:divideOctree()
 		--these values are defined here so they dont have to be searched for 8 times in the loop
@@ -220,23 +222,18 @@ do
 			local newNode = SpheretreeNode.new(cFrame, radius / 4, shape, divisionThreshold, depth, {}, depth + 1)
 			local newPosition = newCframe.Position
 			childNodes[newPosition] = newNode
-			--i dont like how this is done, i
-			--Check items inside parent and add if inside child too
+			--to improev
 			for position, item in contains do
 				local itemSize = item.Size
 				--for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
 				self:tryInsert(position, math.max(itemSize.X, itemSize.Y, itemSize.Z), "sphere", item)
 			end
-			--cut because unneeded?
-			-- const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
-			-- if (realCurrentDivision < timesToDivide) {
-			--   newNode.divideOctree(1, realCurrentDivision + 1);
-			-- }
 		end
 		return childNodes
 	end
 end
 local function Create(cFrame, size)
+	print("octree born")
 	--do sum
 	--const position: NewVector3 = vector.create(px, py, pz);
 	-- const size: NewVector3 = vector.create(sx, sy, sz);

@@ -191,6 +191,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
       this.contains.size() > this.divisionThreshold &&
       this.depth + 1 <= this.depthLimit
     ) {
+      print('UNDERLIMIT');
       this.childNodes = this.divideOctree<Part>();
     }
     //its not letting me reference 'this' inside of the position change function, so mean
@@ -199,6 +200,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     //since we approximate all objs into their bounding radiuses, we don't care about the rotation.
     //in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
     item.GetPropertyChangedSignal('Position').Connect(function () {
+      print('pos change');
       const itemPosition = item.Position;
       const vectorDifference = nodePosition.sub(itemPosition);
       const distance = vectorDifference.Magnitude;
@@ -216,6 +218,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     itemShape: ShapeTypes,
     itemToInsert: Part
   ) {
+    print('INSERT ATTEMPT');
     let touching = false;
     let itemPosition;
 
@@ -242,9 +245,9 @@ export class SpheretreeNode extends OctreeNode<Part> {
   }
 
   query(hitboxCframe: CFrame, hitboxSize: vector, hitboxShape: ShapeTypes) {
-    for (const item of this.contains) {
-      //collision checker logic
-    }
+    // for (const item of this.contains) {
+    //   //collision checker logic
+    // }
   }
 
   divideOctree<insertType>() {
@@ -288,11 +291,10 @@ export class SpheretreeNode extends OctreeNode<Part> {
       const newPosition = newCframe.Position;
       childNodes.set(newPosition as unknown as vector, newNode);
 
-      //i dont like how this is done, i
-      //Check items inside parent and add if inside child too
-
+      //to improev
       for (const [position, item] of contains) {
         const itemSize = item.Size;
+
         //for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
         this.tryInsert(
           position,
@@ -301,12 +303,6 @@ export class SpheretreeNode extends OctreeNode<Part> {
           item
         );
       }
-
-      //cut because unneeded?
-      // const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
-      // if (realCurrentDivision < timesToDivide) {
-      //   newNode.divideOctree(1, realCurrentDivision + 1);
-      // }
     }
     return childNodes;
   }
@@ -323,6 +319,7 @@ export function Create(
   // lenientMinSize: boolean
   //shape: ShapeTypes
 ) {
+  print('octree born');
   //do sum
   //const position: NewVector3 = vector.create(px, py, pz);
   // const size: NewVector3 = vector.create(sx, sy, sz);
