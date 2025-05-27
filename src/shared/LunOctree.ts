@@ -201,14 +201,14 @@ export class SpheretreeNode extends OctreeNode<Part> {
     //in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
     item.GetPropertyChangedSignal('Position').Connect(function () {
       print('pos change');
-      const itemPosition = item.Position;
-      const vectorDifference = nodePosition.sub(itemPosition);
-      const distance = vectorDifference.Magnitude;
+      // const itemPosition = item.Position;
+      // const vectorDifference = nodePosition.sub(itemPosition);
+      // const distance = vectorDifference.Magnitude;
       //since the spheres will overlap, I need to divide the node radius by the overlap and create a check for that as well.
       //im jsut guessingone what the overlap will be
-      if (distance > nodeRadius + nodeRadius / math.pi) {
-        //
-      }
+      // if (distance > nodeRadius + nodeRadius / math.pi) {
+      //   //
+      // }
     });
   }
 
@@ -231,6 +231,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
         this.radius
       );
     } else if (itemShape === 'sphere') {
+      print('Default shape spehre check');
       itemPosition = itemLocation as vector;
       touching = sphereInSphere(
         itemPosition as vector,
@@ -244,7 +245,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     }
   }
 
-  query(hitboxCframe: CFrame, hitboxSize: vector, hitboxShape: ShapeTypes) {
+  querySpace(hitboxCframe: CFrame, hitboxSize: vector, hitboxShape: ShapeTypes) {
     // for (const item of this.contains) {
     //   //collision checker logic
     // }

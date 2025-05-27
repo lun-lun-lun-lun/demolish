@@ -22,12 +22,12 @@ const lenientMinSize = false;
 const parentNode = undefined;
 const originNode = undefined;
 //hiiii
-cacheControl.increase = 10;
+cacheControl.increase = 15;
 task.wait(5);
 cacheControl.increase = 0;
 //print(testOctree);
 const times = [];
-const TESTS = 5;
+const TESTS = 50;
 for (let i = 0; i < TESTS; i++) {
   const position = [math.random(-50, 50), math.random(-25, 50), math.random(-50, 50)];
   const size = [math.random(min, max), math.random(min, max), math.random(min, max)];
@@ -51,7 +51,7 @@ for (let i = 0; i < TESTS; i++) {
   const timeee = os.clock() - startTime;
   times.push(timeee);
   //print(timeee);
-  task.wait(1);
+  task.wait(3);
 } //hiiii
 
 let total = 0;
@@ -59,5 +59,5 @@ for (const time of times) {
   total += time;
 }
 
-cacheControl.increase = 5;
+cacheControl.increase = 10;
 //print(testOctree);

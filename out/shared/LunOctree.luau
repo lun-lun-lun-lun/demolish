@@ -173,14 +173,14 @@ do
 		--in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
 		item:GetPropertyChangedSignal("Position"):Connect(function()
 			print("pos change")
-			local itemPosition = item.Position
-			local vectorDifference = nodePosition - itemPosition
-			local distance = vectorDifference.Magnitude
+			-- const itemPosition = item.Position;
+			-- const vectorDifference = nodePosition.sub(itemPosition);
+			-- const distance = vectorDifference.Magnitude;
 			--since the spheres will overlap, I need to divide the node radius by the overlap and create a check for that as well.
 			--im jsut guessingone what the overlap will be
-			if distance > nodeRadius + nodeRadius / math.pi then
-				--
-			end
+			-- if (distance > nodeRadius + nodeRadius / math.pi) {
+			--   //
+			-- }
 		end)
 	end
 	function SpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)
@@ -191,6 +191,7 @@ do
 			itemPosition = itemLocation.Position
 			touching = boxInSphere(itemLocation, itemSize, self.cFrame.Position, self.radius)
 		elseif itemShape == "sphere" then
+			print("Default shape spehre check")
 			itemPosition = itemLocation
 			touching = sphereInSphere(itemPosition, itemSize, self.cFrame.Position, self.radius)
 		end
@@ -198,7 +199,7 @@ do
 			self:_insert(itemPosition, itemToInsert)
 		end
 	end
-	function SpheretreeNode:query(hitboxCframe, hitboxSize, hitboxShape)
+	function SpheretreeNode:querySpace(hitboxCframe, hitboxSize, hitboxShape)
 		-- for (const item of this.contains) {
 		--   //collision checker logic
 		-- }

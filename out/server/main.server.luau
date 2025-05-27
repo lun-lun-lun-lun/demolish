@@ -14,12 +14,12 @@ local lenientMinSize = false
 local parentNode = nil
 local originNode = nil
 --hiiii
-cacheControl.increase = 10
+cacheControl.increase = 15
 task.wait(5)
 cacheControl.increase = 0
 --print(testOctree);
 local times = {}
-local TESTS = 5
+local TESTS = 50
 for i = 0, TESTS - 1 do
 	local position = { math.random(-50, 50), math.random(-25, 50), math.random(-50, 50) }
 	local size = { math.random(min, max), math.random(min, max), math.random(min, max) }
@@ -31,11 +31,11 @@ for i = 0, TESTS - 1 do
 	local timeee = os.clock() - startTime
 	table.insert(times, timeee)
 	--print(timeee);
-	task.wait(1)
+	task.wait(3)
 end
 local total = 0
 for _, time in times do
 	total += time
 end
-cacheControl.increase = 5
+cacheControl.increase = 10
 --print(testOctree);
