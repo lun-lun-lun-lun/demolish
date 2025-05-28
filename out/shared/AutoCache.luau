@@ -4,12 +4,13 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
-local FAR = 9999
-local DEFAULT_CACHE_POSITION = CFrame.new(FAR, FAR, FAR)
+local FAR = 5000
+--autocache sometimes bugs out when I put my parts really really far away
+local DEFAULT_CACHE_POSITION = CFrame.new(FAR, math.abs(FAR), FAR)
+local MAX_CACHED_INSTANCES = 9000
 local allCaches = {}
---const MAX_CACHED_INSTANCES = 9000;
 local rates = {
-	increase = 2,
+	increase = 1,
 }
 local AutoCache
 do
@@ -28,7 +29,7 @@ do
 		self.cache = {}
 		self.hiddenCframe = DEFAULT_CACHE_POSITION
 		self.cframeTable = {}
-		self.maximum = 9999
+		self.maximum = MAX_CACHED_INSTANCES
 		self.usedThisHeartbeat = false
 		self.template = template
 		--if you gave a position, we'll use it

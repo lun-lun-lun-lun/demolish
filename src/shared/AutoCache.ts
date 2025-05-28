@@ -7,19 +7,21 @@ import { Spawn } from 'shared/SpawnTs';
 
 type NewVector = ReturnType<typeof vector.create>;
 type Cacheable = Part | Model;
-const FAR = 9999;
-const DEFAULT_CACHE_POSITION = new CFrame(FAR, FAR, FAR);
+const FAR = 5000;
+//autocache sometimes bugs out when I put my parts really really far away
+const DEFAULT_CACHE_POSITION = new CFrame(FAR, math.abs(FAR), FAR);
+const MAX_CACHED_INSTANCES = 9000;
 const allCaches: AutoCache[] = [];
-//const MAX_CACHED_INSTANCES = 9000;
+
 export const rates = {
-  increase: 2
+  increase: 1
 };
 export class AutoCache {
   public template: Cacheable = undefined as unknown as Cacheable;
   public cache: [Cacheable] = [] as unknown as [Cacheable];
   public hiddenCframe: CFrame = DEFAULT_CACHE_POSITION;
   public cframeTable: CFrame[] = [] as unknown as CFrame[];
-  public maximum: number = 9999;
+  public maximum: number = MAX_CACHED_INSTANCES;
   public usedThisHeartbeat: boolean = false; //eventually will be changed for a more robust analysis
   constructor(template: Cacheable, amount: number, position: vector | undefined) {
     this.template = template;
