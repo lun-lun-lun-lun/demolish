@@ -272,7 +272,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     const [offsetX, offsetY, offsetZ] = [-stepX / 2, -stepY / 2, -stepZ / 2];
     const newSize = newVector(stepX, stepY, stepZ);
 
-    //create 8 properly sized, equally spaced nodes within the AABB of the Octree
+    //  create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
       const positionOffset = new CFrame(
         stepChange.x * stepX + offsetX,

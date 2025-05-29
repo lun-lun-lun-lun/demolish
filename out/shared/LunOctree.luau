@@ -216,7 +216,7 @@ do
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
 		local offsetX, offsetY, offsetZ = -stepX / 2, -stepY / 2, -stepZ / 2
 		local newSize = newVector(stepX, stepY, stepZ)
-		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
+		--  create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
 			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
 			local newCframe = self.cFrame:ToWorldSpace(positionOffset)

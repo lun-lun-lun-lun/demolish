@@ -10,11 +10,8 @@ import { makeHello } from 'shared/module';
 import LunOctree from 'shared/LunOctree';
 import cacheControl from 'shared/AutoCache';
 
-// import { Make } from "shared/LooseOctree";
-// lol.kill("Hi");
-
-const min = 10;
-const max = 20;
+const min = 5;
+const max = 30;
 
 const maxDepth = 5;
 const minSize = 1;
@@ -29,7 +26,7 @@ cacheControl.increase = 0;
 const times = [];
 const TESTS = 50;
 for (let i = 0; i < TESTS; i++) {
-  const position = [math.random(-50, 50), math.random(-25, 50), math.random(-50, 50)];
+  const position = [math.random(-100, 100), math.random(-15, 50), math.random(-100, 100)];
   const size = [math.random(min, max), math.random(min, max), math.random(min, max)];
   let cFrame = new CFrame(position[0], position[1], position[2]);
   cFrame = cFrame.ToObjectSpace(
@@ -47,7 +44,7 @@ for (let i = 0; i < TESTS; i++) {
     // lenientMinSize
     //'box'
   );
-  testOctree.divideOctree(math.random(1, 2));
+  testOctree.divideOctree(math.random(1, 3));
   const timeee = os.clock() - startTime;
   times.push(timeee);
   //print(timeee);
