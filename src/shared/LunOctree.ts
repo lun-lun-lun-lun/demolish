@@ -178,7 +178,12 @@ export class SpheretreeNode extends OctreeNode<Part> {
   }
 
   _update(item: Part, newPosition: vector) {
-    //
+    //not sure exactly of what to do here yet
+    //will figure out the rest of the stuff at home\
+    //i really dont know whats causing this bu
+    //there's not a reasonable reason
+    //'reasonable reason'
+    //okay there probably is a reasonable reason
   }
 
   _remove(position: vector, item: Part) {}
