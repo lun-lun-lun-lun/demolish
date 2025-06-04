@@ -7,7 +7,7 @@ local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", 
 local boxInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInSphere
 local sphereInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").sphereInSphere
 --Types in TS us PascalCase
-local EMPTY_VECTOR = vector.create(0, 0, 0)
+local EMPTY_VECTOR = vector.zero
 local EMPTY_CFRAME = CFrame.new(0, 0, 0)
 local templatePart = Instance.new("Part")
 templatePart.Parent = Workspace
@@ -101,6 +101,14 @@ do
 		return childNodes
 	end
 end
+--I gave these simple functions names because I know I'll forget how later
+local function getBoundingSpherePart(part)
+	return part.Size.Magnitude
+end
+local function getBoundingSphereModel(model)
+	local modelCframe, modelSize = model:GetBoundingBox()
+	return modelSize.Magnitude / 2
+end
 local SpheretreeNode
 do
 	local super = OctreeNode
@@ -115,7 +123,69 @@ do
 		local self = setmetatable({}, SpheretreeNode)
 		return self:constructor(...) or self
 	end
-	function SpheretreeNode:constructor(cFrame, radius, shape, divisionThreshold, depthLimit, contains, depth)
+	function SpheretreeNode:constructor(position, radius, maxDepth, divisionThreshold)
+		super.constructor(self, CFrame.new(position.x, position.y, position.z), vector.create(radius, radius, radius))
+		self.position = EMPTY_VECTOR
+		self.radius = 0
+		self.childTrees = {}
+		self.childItems = {}
+		self.depth = 0
+		self.maxDepth = 3
+		self.divisionThreshold = 3
+		self.position = position
+		self.radius = radius
+		if maxDepth ~= nil then
+			self.maxDepth = maxDepth
+		end
+		if divisionThreshold ~= nil then
+			self.divisionThreshold = divisionThreshold
+		end
+	end
+	function SpheretreeNode:checkInsert(potentialHits)
+		local threshold = self.divisionThreshold
+		local depth = self.depth
+		local maxDepth = self.maxDepth
+		local childItems = self.childItems
+		local insertions = 0
+		for _, item in potentialHits do
+			local itemRadius
+			local itemPosition
+			if item:IsA("Part") then
+				itemRadius = getBoundingSpherePart(item)
+				itemPosition = item.Position
+			else
+				itemRadius = getBoundingSphereModel(item)
+				itemPosition = item:GetPivot().Position
+			end
+			if sphereInSphere(itemPosition, itemRadius, self.position, self.radius) == true then
+				--i put the size in the [] so I don't have to re-calc the size of it each time
+				--i'll make another thing for updating size and position later
+				local _itemPosition = itemPosition
+				local _arg1 = { item, itemRadius }
+				childItems[_itemPosition] = _arg1
+				insertions += 1
+			end
+			if insertions >= threshold and depth + 1 <= maxDepth then
+				--split
+			end
+		end
+	end
+end
+local OldSpheretreeNode
+do
+	local super = OctreeNode
+	OldSpheretreeNode = setmetatable({}, {
+		__tostring = function()
+			return "OldSpheretreeNode"
+		end,
+		__index = super,
+	})
+	OldSpheretreeNode.__index = OldSpheretreeNode
+	function OldSpheretreeNode.new(...)
+		local self = setmetatable({}, OldSpheretreeNode)
+		return self:constructor(...) or self
+	end
+	function OldSpheretreeNode:constructor(cFrame, radius, shape, divisionThreshold, depthLimit, contains, depth)
 		if divisionThreshold == nil then
 			divisionThreshold = 5
 		end
@@ -141,12 +211,17 @@ do
 			self.depth = depth
 		end
 	end
-	function SpheretreeNode:_update(item, newPosition)
-		--
+	function OldSpheretreeNode:_update(item, newPosition)
+		--not sure exactly of what to do here yet
+		--will figure out the rest of the stuff at home\
+		--i really dont know whats causing this bu
+		--there's not a reasonable reason
+		--'reasonable reason'
+		--okay there probably is a reasonable reason
 	end
-	function SpheretreeNode:_remove(position, item)
+	function OldSpheretreeNode:_remove(position, item)
 	end
-	function SpheretreeNode:_insert(position, item)
+	function OldSpheretreeNode:_insert(position, item)
 		local _contains = self.contains
 		local _position = position
 		local _item = item
@@ -163,7 +238,6 @@ do
 			_condition = self.depth + 1 <= self.depthLimit
 		end
 		if _condition then
-			print("UNDERLIMIT")
 			self.childNodes = self:divideOctree()
 		end
 		--its not letting me reference 'this' inside of the position change function, so mean
@@ -183,7 +257,7 @@ do
 			-- }
 		end)
 	end
-	function SpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)
+	function OldSpheretreeNode:tryInsert(itemLocation, itemSize, itemShape, itemToInsert)
 		print("INSERT ATTEMPT")
 		local touching = false
 		local itemPosition
@@ -199,12 +273,12 @@ do
 			self:_insert(itemPosition, itemToInsert)
 		end
 	end
-	function SpheretreeNode:querySpace(hitboxCframe, hitboxSize, hitboxShape)
+	function OldSpheretreeNode:querySpace(hitboxCframe, hitboxSize, hitboxShape)
 		-- for (const item of this.contains) {
 		--   //collision checker logic
 		-- }
 	end
-	function SpheretreeNode:divideOctree()
+	function OldSpheretreeNode:divideOctree()
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
 		-- const childNodes: { [key: string]: OctreeNode } =
@@ -220,7 +294,7 @@ do
 		for _, stepChange in octreeDivisionPositions do
 			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
 			local newCframe = self.cFrame:ToWorldSpace(positionOffset)
-			local newNode = SpheretreeNode.new(cFrame, radius / 4, shape, divisionThreshold, depth, {}, depth + 1)
+			local newNode = OldSpheretreeNode.new(cFrame, radius / 4, shape, divisionThreshold, depth, {}, depth + 1)
 			local newPosition = newCframe.Position
 			childNodes[newPosition] = newNode
 			--to improev
@@ -249,5 +323,6 @@ return {
 	Create = Create,
 	OctreeNode = OctreeNode,
 	SpheretreeNode = SpheretreeNode,
+	OldSpheretreeNode = OldSpheretreeNode,
 	default = default,
 }

@@ -12,8 +12,9 @@ type Vector3Table = { x: number; y: number; z: number };
 type Vector3Tuple = [number, number, number];
 type OctreeDetected = [Instance] | [];
 type ShapeTypes = 'box' | 'sphere';
+type sizeType = vector | number;
 
-const EMPTY_VECTOR = vector.create(0, 0, 0);
+const EMPTY_VECTOR = vector.zero;
 const EMPTY_CFRAME = new CFrame(0, 0, 0);
 const templatePart = new Instance('Part');
 templatePart.Parent = Workspace;
@@ -143,8 +144,83 @@ export class OctreeNode<containType> {
   }
 }
 
-type sizeType = vector | number;
+//I gave these simple functions names because I know I'll forget how later
+function getBoundingSpherePart(part: Part) {
+  return part.Size.Magnitude;
+}
+function getBoundingSphereModel(model: Model) {
+  const [modelCframe, modelSize] = model.GetBoundingBox();
+  return modelSize.Magnitude / 2;
+}
+
+interface treeChildItem {
+  boundingRadius: number;
+}
+type childTreeMap = Map<vector, SpheretreeNode>;
+type childItemMap = Map<vector, [Part | Model, number]>;
+
 export class SpheretreeNode extends OctreeNode<Part> {
+  public position: vector = EMPTY_VECTOR;
+  public radius: number = 0;
+
+  public childTrees: childTreeMap = new Map() as unknown as childTreeMap;
+  public childItems: childItemMap = new Map() as unknown as childItemMap;
+
+  public depth: number = 0;
+  public maxDepth: number = 3;
+  public divisionThreshold: number = 3;
+  constructor(
+    position: vector,
+    radius: number,
+    maxDepth?: number,
+    divisionThreshold?: number
+  ) {
+    super(
+      new CFrame(position.x, position.y, position.z),
+      vector.create(radius, radius, radius)
+    );
+    this.position = position;
+    this.radius = radius;
+    if (maxDepth !== undefined) {
+      this.maxDepth = maxDepth;
+    }
+    if (divisionThreshold !== undefined) {
+      this.divisionThreshold = divisionThreshold;
+    }
+  }
+  checkInsert(potentialHits: [Part | Model]) {
+    const threshold = this.divisionThreshold;
+    const depth = this.depth;
+    const maxDepth = this.maxDepth;
+    const childItems = this.childItems;
+    let insertions = 0;
+
+    for (const item of potentialHits) {
+      let itemRadius: number;
+      let itemPosition: vector;
+      if (item.IsA('Part')) {
+        itemRadius = getBoundingSpherePart(item);
+        itemPosition = item.Position as unknown as vector;
+      } else {
+        itemRadius = getBoundingSphereModel(item);
+        itemPosition = item.GetPivot().Position as unknown as vector;
+      }
+
+      if (sphereInSphere(itemPosition, itemRadius, this.position, this.radius) === true) {
+        //i put the size in the [] so I don't have to re-calc the size of it each time
+        //i'll make another thing for updating size and position later
+        childItems.set(itemPosition, [item, itemRadius]);
+        insertions++;
+      }
+
+      if (insertions >= threshold && depth + 1 <= maxDepth) {
+        //split
+      }
+    }
+  }
+}
+
+export class OldSpheretreeNode extends OctreeNode<Part> {
   public childNodes: Map<vector, OctreeNode<Part>> = new Map();
   public contains: Map<vector, Part> = new Map();
   public shape: ShapeTypes = 'box';
@@ -196,7 +272,6 @@ export class SpheretreeNode extends OctreeNode<Part> {
       this.contains.size() > this.divisionThreshold &&
       this.depth + 1 <= this.depthLimit
     ) {
-      print('UNDERLIMIT');
       this.childNodes = this.divideOctree<Part>();
     }
     //its not letting me reference 'this' inside of the position change function, so mean
@@ -270,7 +345,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
       this.contains,
       this.depth + 1
     ];
-    const childNodes = new Map<vector, SpheretreeNode>();
+    const childNodes = new Map<vector, OldSpheretreeNode>();
     const size = this.size;
     const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
     const [stepX, stepY, stepZ] = [sizeX / 2, sizeY / 2, sizeZ / 2];
@@ -285,7 +360,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
         stepChange.z * stepZ + offsetZ
       );
       const newCframe = this.cFrame.ToWorldSpace(positionOffset);
-      const newNode = new SpheretreeNode(
+      const newNode = new OldSpheretreeNode(
         cFrame,
         radius / 4,
         shape,
