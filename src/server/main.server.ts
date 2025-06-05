@@ -18,12 +18,14 @@ interface MapChildren {
   Block4: Part;
   Block5: Part;
 }
+
+const BOX_SPHERE_CONSTANT = math.sqrt(3) / 2; //multiply by the CUBE's x, y or z to make a sphere that perfectly consumes it
 const WORLD_CENTER = vector.create(0, 80, 0);
-const SPHERETREE_RADIUS = (100 * math.sqrt(3)) / 2; //sphere that encompasses the breadth of a 100by100by100 cube
+const SPHERETREE_RADIUS = 100 * BOX_SPHERE_CONSTANT;
 const map = Workspace.WaitForChild('Map') as Folder & MapChildren;
 
 print(map.Block1);
-const mapSpheretree = new SpheretreeNode(WORLD_CENTER, SPHERETREE_RADIUS);
+const mapSpheretree = new SpheretreeNode(WORLD_CENTER, SPHERETREE_RADIUS, 1, 5, 3);
 
 // const min = 5;
 // const max = 30;

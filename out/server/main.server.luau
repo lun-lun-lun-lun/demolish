@@ -4,11 +4,12 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local SpheretreeNode = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "LunOctree").SpheretreeNode
+local BOX_SPHERE_CONSTANT = math.sqrt(3) / 2
 local WORLD_CENTER = vector.create(0, 80, 0)
-local SPHERETREE_RADIUS = (100 * math.sqrt(3)) / 2
+local SPHERETREE_RADIUS = 100 * BOX_SPHERE_CONSTANT
 local map = Workspace:WaitForChild("Map")
 print(map.Block1)
-local mapSpheretree = SpheretreeNode.new(WORLD_CENTER, SPHERETREE_RADIUS)
+local mapSpheretree = SpheretreeNode.new(WORLD_CENTER, SPHERETREE_RADIUS, 1, 5, 3)
 -- const min = 5;
 -- const max = 30;
 -- const maxDepth = 5;

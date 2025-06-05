@@ -17,6 +17,7 @@ type sizeType = vector | number;
 const EMPTY_VECTOR = vector.zero;
 const EMPTY_CFRAME = new CFrame(0, 0, 0);
 const templatePart = new Instance('Part');
+const BOX_SPHERE_CONSTANT = math.sqrt(3) / 2;
 templatePart.Parent = Workspace;
 templatePart.Anchored = true;
 templatePart.CanCollide = false;
@@ -172,6 +173,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
   constructor(
     position: vector,
     radius: number,
+    depth: number,
     maxDepth?: number,
     divisionThreshold?: number
   ) {
@@ -181,6 +183,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     );
     this.position = position;
     this.radius = radius;
+    this.depth = depth;
     if (maxDepth !== undefined) {
       this.maxDepth = maxDepth;
     }
@@ -188,11 +191,14 @@ export class SpheretreeNode extends OctreeNode<Part> {
       this.divisionThreshold = divisionThreshold;
     }
   }
+
+  //insert a list of parts/models if they're touching the node
   checkInsert(potentialHits: [Part | Model]) {
     const threshold = this.divisionThreshold;
     const depth = this.depth;
     const maxDepth = this.maxDepth;
     const childItems = this.childItems;
+    const position = this.position;
     let insertions = 0;
 
     for (const item of potentialHits) {
@@ -214,175 +220,53 @@ export class SpheretreeNode extends OctreeNode<Part> {
       }
 
       if (insertions >= threshold && depth + 1 <= maxDepth) {
-        //split
+        //split and redistribute
+        const childNodes = this.divideOctree(1);
+        for (const [itemPosition, [item, itemRadius]] of childItems) {
+          //
+          //get distance from positions as a vector
+          //check if the bottom part of the item's bounding sphere is definitely above/below/away from other spheres using that lines x, y, and z
+        }
       }
     }
   }
-}
 
-export class OldSpheretreeNode extends OctreeNode<Part> {
-  public childNodes: Map<vector, OctreeNode<Part>> = new Map();
-  public contains: Map<vector, Part> = new Map();
-  public shape: ShapeTypes = 'box';
-  public depth = 0;
-  public depthLimit = 3;
-  public divisionThreshold = 10; //this was zero before and would have obliterated my pc lmao
-  public radius: number;
-  //public shape: ShapeTypes = 'box';z
-  constructor(
-    //might change from cframe to position now that this is a spheretree?
-    cFrame: CFrame,
-    radius: number,
-    shape: ShapeTypes,
-    divisionThreshold: number = 5,
-    depthLimit: number = 5,
-    contains?: Map<vector, Part>,
-    depth?: number
-  ) {
-    //const newVector: vector = vector.create(x, y, z);
-    super(cFrame, vector.create(radius, radius, radius));
-    this.shape = shape;
-    this.radius = radius;
-    this.divisionThreshold = divisionThreshold;
-    this.depthLimit = depthLimit;
-    if (contains !== undefined) {
-      this.contains = contains;
-    }
-    if (depth !== undefined) {
-      this.depth = depth;
-    }
-  }
-
-  _update(item: Part, newPosition: vector) {
-    //not sure exactly of what to do here yet
-    //will figure out the rest of the stuff at home\
-    //i really dont know whats causing this bu
-    //there's not a reasonable reason
-    //'reasonable reason'
-    //okay there probably is a reasonable reason
-  }
-
-  _remove(position: vector, item: Part) {}
-
-  _insert(position: vector, item: Part) {
-    this.contains.set(position, item as Part);
-
-    //if too many objects, divide
-    if (
-      this.contains.size() > this.divisionThreshold &&
-      this.depth + 1 <= this.depthLimit
-    ) {
-      this.childNodes = this.divideOctree<Part>();
-    }
-    //its not letting me reference 'this' inside of the position change function, so mean
-    const nodePosition = this.cFrame.Position;
-    const nodeRadius = this.radius; //should make sure radius isn't being used or set as diameter in places
-    //since we approximate all objs into their bounding radiuses, we don't care about the rotation.
-    //in the future, when I want to deal with items that have extreme sizes, i'll need to change this. Or not. Idc.
-    item.GetPropertyChangedSignal('Position').Connect(function () {
-      print('pos change');
-      // const itemPosition = item.Position;
-      // const vectorDifference = nodePosition.sub(itemPosition);
-      // const distance = vectorDifference.Magnitude;
-      //since the spheres will overlap, I need to divide the node radius by the overlap and create a check for that as well.
-      //im jsut guessingone what the overlap will be
-      // if (distance > nodeRadius + nodeRadius / math.pi) {
-      //   //
-      // }
-    });
-  }
-
-  tryInsert(
-    itemLocation: vector | CFrame,
-    itemSize: vector | number,
-    itemShape: ShapeTypes,
-    itemToInsert: Part
-  ) {
-    print('INSERT ATTEMPT');
-    let touching = false;
-    let itemPosition;
-
-    if (itemShape === 'box') {
-      itemPosition = (itemLocation as CFrame).Position as unknown as vector;
-      touching = boxInSphere(
-        itemLocation as CFrame,
-        itemSize as vector,
-        this.cFrame.Position as unknown as vector,
-        this.radius
-      );
-    } else if (itemShape === 'sphere') {
-      print('Default shape spehre check');
-      itemPosition = itemLocation as vector;
-      touching = sphereInSphere(
-        itemPosition as vector,
-        itemSize as number,
-        this.cFrame.Position as unknown as vector,
-        this.radius
-      );
-    }
-    if (touching === true) {
-      this._insert(itemPosition as vector, itemToInsert);
-    }
-  }
-
-  querySpace(hitboxCframe: CFrame, hitboxSize: vector, hitboxShape: ShapeTypes) {
-    // for (const item of this.contains) {
-    //   //collision checker logic
-    // }
-  }
-
-  divideOctree<insertType>() {
+  //divide the spheretree into 8 equally spaced sub-spheres
+  divideOctree(timesToDivide: number, currentDivision?: number) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
     // const childNodes: { [key: string]: OctreeNode } =
     //   {} as unknown as { [key: string]: OctreeNode };
-    const [cFrame, radius, shape, divisionThreshold, depthLimit, contains, depth] = [
-      this.cFrame,
-      this.radius,
-      this.shape,
-      this.divisionThreshold,
-      this.depthLimit,
-      this.contains,
-      this.depth + 1
-    ];
-    const childNodes = new Map<vector, OldSpheretreeNode>();
-    const size = this.size;
-    const [sizeX, sizeY, sizeZ] = [size.x, size.y, size.z];
-    const [stepX, stepY, stepZ] = [sizeX / 2, sizeY / 2, sizeZ / 2];
-    const [offsetX, offsetY, offsetZ] = [-stepX / 2, -stepY / 2, -stepZ / 2];
-    const newSize = newVector(stepX, stepY, stepZ);
-
-    //  create 8 properly sized, equally spaced nodes within the AABB of the Octree
+    const childNodes = new Map<vector, SpheretreeNode>();
+    const radius = this.radius;
+    const step = radius / 2;
+    const offset = -step / 2;
+    const childRadius = step;
+    const stepOffset = step + offset;
+    const position = this.position;
+    const [positionX, positionY, positionZ] = [position.x, position.y, position.z];
+    const depth = this.depth;
+    const maxDepth = this.maxDepth;
+    const divisionThreshold = this.divisionThreshold;
+    //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
-      const positionOffset = new CFrame(
-        stepChange.x * stepX + offsetX,
-        stepChange.y * stepY + offsetY,
-        stepChange.z * stepZ + offsetZ
+      const childPosition = vector.create(
+        positionX + stepChange.x * stepOffset,
+        positionY + stepChange.y * stepOffset,
+        positionZ + stepChange.z * stepOffset
       );
-      const newCframe = this.cFrame.ToWorldSpace(positionOffset);
-      const newNode = new OldSpheretreeNode(
-        cFrame,
-        radius / 4,
-        shape,
-        divisionThreshold,
-        depth,
-        new Map(),
-        depth + 1
+      const newNode = new SpheretreeNode(
+        childPosition,
+        childRadius,
+        depth + 1,
+        maxDepth,
+        divisionThreshold
       );
-      const newPosition = newCframe.Position;
-      childNodes.set(newPosition as unknown as vector, newNode);
+      childNodes.set(childPosition as unknown as vector, newNode);
 
-      //to improev
-      for (const [position, item] of contains) {
-        const itemSize = item.Size;
-
-        //for now i'll have these as spheres, but if I want to include other shapes i'll probably have to use CFrames as keys or change how my collision detection works
-        this.tryInsert(
-          position,
-          math.max(itemSize.X, itemSize.Y, itemSize.Z) as unknown as number,
-          'sphere',
-          item
-        );
+      const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
+      if (realCurrentDivision < timesToDivide) {
+        newNode.divideOctree(1, realCurrentDivision + 1);
       }
     }
     return childNodes;
