@@ -31,6 +31,8 @@ function vectorToVector3(vector: vector): Vector3 {
 }
 
 const newVector = vector.create;
+const BOTTOM_NODES = table.freeze([3, 5, 7, 8]);
+const TOP_NODES = table.freeze([1, 2, 4, 6]);
 //octree
 const octreeDivisionPositions = table.freeze([
   //since we already know all unique step configurations for octrees, we dont need to use a for loop to find them
@@ -123,6 +125,7 @@ export class OctreeNode<containType> {
     const [stepX, stepY, stepZ] = [sizeX / 2, sizeY / 2, sizeZ / 2];
     const [offsetX, offsetY, offsetZ] = [-stepX / 2, -stepY / 2, -stepZ / 2];
     const newSize = newVector(stepX, stepY, stepZ);
+    const newNodes = [];
 
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
@@ -135,13 +138,13 @@ export class OctreeNode<containType> {
       const newNode = new OctreeNode(newCframe, newSize);
       const newPosition = newCframe.Position;
       childNodes.set(newPosition as unknown as vector, newNode);
-
+      newNodes.push(newNode);
       const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
         newNode.divideOctree(1, realCurrentDivision + 1);
       }
     }
-    return childNodes;
+    return newNodes;
   }
 }
 
@@ -199,11 +202,24 @@ export class SpheretreeNode extends OctreeNode<Part> {
     const maxDepth = this.maxDepth;
     const childItems = this.childItems;
     const position = this.position;
-    let insertions = 0;
+    const radius = this.radius;
+    const childRadius = radius / 2;
+    const childBoxSize = childRadius / BOX_SPHERE_CONSTANT; //should probably make sure that this is correct...2
 
+    //the most the sphere extends
+    const childExtraCut = childRadius - childBoxSize; //obviously doesn't account for angle, but helps with slightly faster check
+
+    const [positionX, positionY, positionZ] = [position.x, position.y, position.z];
+    const bottomNodesTop = positionY + childExtraCut;
+    const topNodesBottom = positionY - childExtraCut;
+    let insertions = 0;
+    let mustDivide = false;
+    const bottomItems = [];
+    const topItems = [];
     for (const item of potentialHits) {
       let itemRadius: number;
       let itemPosition: vector;
+
       if (item.IsA('Part')) {
         itemRadius = getBoundingSpherePart(item);
         itemPosition = item.Position as unknown as vector;
@@ -212,20 +228,41 @@ export class SpheretreeNode extends OctreeNode<Part> {
         itemPosition = item.GetPivot().Position as unknown as vector;
       }
 
-      if (sphereInSphere(itemPosition, itemRadius, this.position, this.radius) === true) {
+      const itemTop = itemPosition.y + itemRadius / 2;
+      const itemBottom = itemPosition.y - itemRadius / 2;
+
+      if (sphereInSphere(itemPosition, itemRadius, position, this.radius) === true) {
         //i put the size in the [] so I don't have to re-calc the size of it each time
         //i'll make another thing for updating size and position later
         childItems.set(itemPosition, [item, itemRadius]);
         insertions++;
+
+        if (itemBottom > bottomNodesTop) {
+          //the item is assuredly above the bottom nodes, so we only need to check the top nodes.
+          topItems.push(item);
+        } else if (itemTop < topNodesBottom) {
+          //the item is assuredly below the top nodes, so we only need to check the bottom nodes.
+          bottomItems.push(item);
+        }
       }
 
       if (insertions >= threshold && depth + 1 <= maxDepth) {
-        //split and redistribute
-        const childNodes = this.divideOctree(1);
-        for (const [itemPosition, [item, itemRadius]] of childItems) {
-          //
-          //get distance from positions as a vector
-          //check if the bottom part of the item's bounding sphere is definitely above/below/away from other spheres using that lines x, y, and z
+        mustDivide = true;
+      }
+    }
+
+    if (mustDivide === true) {
+      //split and redistribute
+      const possibleHitNodes = this.divideOctree(1);
+
+      for (const i of BOTTOM_NODES) {
+        for (const item of bottomItems) {
+          possibleHitNodes[i].checkInsert([item]);
+        }
+      }
+      for (const i of TOP_NODES) {
+        for (const item of topItems) {
+          possibleHitNodes[i].checkInsert([item]);
         }
       }
     }
@@ -248,6 +285,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     const depth = this.depth;
     const maxDepth = this.maxDepth;
     const divisionThreshold = this.divisionThreshold;
+    const newNodes = [];
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
       const childPosition = vector.create(
@@ -262,14 +300,15 @@ export class SpheretreeNode extends OctreeNode<Part> {
         maxDepth,
         divisionThreshold
       );
-      childNodes.set(childPosition as unknown as vector, newNode);
 
+      childNodes.set(childPosition as unknown as vector, newNode);
+      newNodes.push(newNode);
       const realCurrentDivision = currentDivision !== undefined ? currentDivision : 1;
       if (realCurrentDivision < timesToDivide) {
         newNode.divideOctree(1, realCurrentDivision + 1);
       }
     }
-    return childNodes;
+    return newNodes;
   }
 }
 

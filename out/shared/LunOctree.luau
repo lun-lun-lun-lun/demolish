@@ -21,6 +21,8 @@ local function vectorToVector3(vector)
 	return Vector3.new(vector.x, vector.y, vector.z)
 end
 local newVector = vector.create
+local BOTTOM_NODES = table.freeze({ 3, 5, 7, 8 })
+local TOP_NODES = table.freeze({ 1, 2, 4, 6 })
 --octree
 local octreeDivisionPositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(0, 0, 1), newVector(0, 1, 1), newVector(1, 0, 1), newVector(1, 1, 0), newVector(1, 1, 1) })
 --quadtree
@@ -86,6 +88,7 @@ do
 		local stepX, stepY, stepZ = sizeX / 2, sizeY / 2, sizeZ / 2
 		local offsetX, offsetY, offsetZ = -stepX / 2, -stepY / 2, -stepZ / 2
 		local newSize = newVector(stepX, stepY, stepZ)
+		local newNodes = {}
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
 			local positionOffset = CFrame.new(stepChange.x * stepX + offsetX, stepChange.y * stepY + offsetY, stepChange.z * stepZ + offsetZ)
@@ -93,12 +96,13 @@ do
 			local newNode = OctreeNode.new(newCframe, newSize)
 			local newPosition = newCframe.Position
 			childNodes[newPosition] = newNode
+			table.insert(newNodes, newNode)
 			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
 			if realCurrentDivision < timesToDivide then
 				newNode:divideOctree(1, realCurrentDivision + 1)
 			end
 		end
-		return childNodes
+		return newNodes
 	end
 end
 --I gave these simple functions names because I know I'll forget how later
@@ -148,7 +152,18 @@ do
 		local maxDepth = self.maxDepth
 		local childItems = self.childItems
 		local position = self.position
+		local radius = self.radius
+		local childRadius = radius / 2
+		local childBoxSize = childRadius / BOX_SPHERE_CONSTANT
+		--the most the sphere extends
+		local childExtraCut = childRadius - childBoxSize
+		local positionX, positionY, positionZ = position.x, position.y, position.z
+		local bottomNodesTop = positionY + childExtraCut
+		local topNodesBottom = positionY - childExtraCut
 		local insertions = 0
+		local mustDivide = false
+		local bottomItems = {}
+		local topItems = {}
 		for _, item in potentialHits do
 			local itemRadius
 			local itemPosition
@@ -159,23 +174,38 @@ do
 				itemRadius = getBoundingSphereModel(item)
 				itemPosition = item:GetPivot().Position
 			end
-			if sphereInSphere(itemPosition, itemRadius, self.position, self.radius) == true then
+			local itemTop = itemPosition.y + itemRadius / 2
+			local itemBottom = itemPosition.y - itemRadius / 2
+			if sphereInSphere(itemPosition, itemRadius, position, self.radius) == true then
 				--i put the size in the [] so I don't have to re-calc the size of it each time
 				--i'll make another thing for updating size and position later
 				local _itemPosition = itemPosition
 				local _arg1 = { item, itemRadius }
 				childItems[_itemPosition] = _arg1
 				insertions += 1
+				if itemBottom > bottomNodesTop then
+					--the item is assuredly above the bottom nodes, so we only need to check the top nodes.
+					table.insert(topItems, item)
+				elseif itemTop < topNodesBottom then
+					--the item is assuredly below the top nodes, so we only need to check the bottom nodes.
+					table.insert(bottomItems, item)
+				end
 			end
 			if insertions >= threshold and depth + 1 <= maxDepth then
-				--split and redistribute
-				local childNodes = self:divideOctree(1)
-				for itemPosition, _binding in childItems do
-					local item = _binding[1]
-					local itemRadius = _binding[2]
-					--
-					--get distance from positions as a vector
-					--check if the bottom part of the item's bounding sphere is definitely above/below/away from other spheres using that lines x, y, and z
+				mustDivide = true
+			end
+		end
+		if mustDivide == true then
+			--split and redistribute
+			local possibleHitNodes = self:divideOctree(1)
+			for _, i in BOTTOM_NODES do
+				for _1, item in bottomItems do
+					possibleHitNodes[i + 1]:checkInsert({ item })
+				end
+			end
+			for _, i in TOP_NODES do
+				for _1, item in topItems do
+					possibleHitNodes[i + 1]:checkInsert({ item })
 				end
 			end
 		end
@@ -196,17 +226,19 @@ do
 		local depth = self.depth
 		local maxDepth = self.maxDepth
 		local divisionThreshold = self.divisionThreshold
+		local newNodes = {}
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
 			local childPosition = vector.create(positionX + stepChange.x * stepOffset, positionY + stepChange.y * stepOffset, positionZ + stepChange.z * stepOffset)
 			local newNode = SpheretreeNode.new(childPosition, childRadius, depth + 1, maxDepth, divisionThreshold)
 			childNodes[childPosition] = newNode
+			table.insert(newNodes, newNode)
 			local realCurrentDivision = if currentDivision ~= nil then currentDivision else 1
 			if realCurrentDivision < timesToDivide then
 				newNode:divideOctree(1, realCurrentDivision + 1)
 			end
 		end
-		return childNodes
+		return newNodes
 	end
 end
 local function Create(cFrame, size)
