@@ -4,18 +4,24 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
-local BinaryOctree = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "BinaryOctree")
+-- import NodeOctree from 'shared/Nodetree';
 local BOX_SPHERE_CONSTANT = math.sqrt(3) / 2
 local WORLD_CENTER = vector.create(0, 80, 0)
 local SPHERETREE_RADIUS = 100 * BOX_SPHERE_CONSTANT
 local map = Workspace:WaitForChild("Map")
 RunService.Heartbeat:Connect(function(deltaTime)
-	local binaryTree = BinaryOctree.newOctree(500, 5)
-	BinaryOctree.InsertObjects(binaryTree, { map.Block1, map.Block2, map.Block3, map.Block4, map.Block5 })
-	-- for (const object of [map.Block1, map.Block2, map.Block3, map.Block4, map.Block5]) {
-	--   BinaryOctree.RemoveObject(binaryTree, object);
-	-- }
-	BinaryOctree.VisualizeOctree(binaryTree)
+	-- const binaryTree = NodeOctree.newOctree(500, 5);
+	-- NodeOctree.InsertObjects(binaryTree, [
+	--   map.Block1,
+	--   map.Block2,
+	--   map.Block3,
+	--   map.Block4,
+	--   map.Block5
+	-- ]);
+	-- // for (const object of [map.Block1, map.Block2, map.Block3, map.Block4, map.Block5]) {
+	-- //   NodeOctree.RemoveObject(binaryTree, object);
+	-- // }
+	-- NodeOctree.VisualizeOctree(binaryTree);
 end)
 --print(map.Block1);
 -- const mapSpheretree = new SpheretreeNode(WORLD_CENTER, SPHERETREE_RADIUS, 1, 5, 3);

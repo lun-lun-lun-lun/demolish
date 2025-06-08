@@ -9,7 +9,7 @@ import { makeHello } from 'shared/module';
 
 import LunOctree from 'shared/LunOctree';
 import { SpheretreeNode } from 'shared/LunOctree';
-import NodeOctree from 'shared/Nodetree';
+// import NodeOctree from 'shared/Nodetree';
 import cacheControl from 'shared/AutoCache';
 
 interface MapChildren {
