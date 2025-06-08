@@ -32,8 +32,7 @@ local function boxInSphere(cframe0, size0, position1, radius1)
 	local relX = relative.X
 	local relY = relative.Y
 	local relZ = relative.Z
-	--very ugly to look at unfortunately, but a potential computation skip
-	--also eslint is being very annoying && i wish i could specify the newline thing not to be forced
+	--very ugly to look at unfortunately
 	local distX = if relX > sizeX then relX - sizeX elseif relX < -sizeX then relX + sizeX else 0
 	local distY = if relY > sizeY then relY - sizeY elseif relY < -sizeY then relY + sizeY else 0
 	local distZ = if relZ > sizeZ then relZ - sizeZ elseif relZ < -sizeZ then relZ + sizeZ else 0
@@ -43,6 +42,21 @@ local function sphereInSphere(position0, radius0, position1, radius1)
 	--is the distance between our positions bigger than our radius?
 	local magnitude = math.sqrt((bit32.bxor((position1.x - position0.x), 2)) + (bit32.bxor((position1.y - position0.y), 2)) + (bit32.bxor((position1.z - position0.z), 2)))
 	return magnitude < radius0 + radius1
+end
+local function pointInBox(cframe0, size0, position1)
+	--todo
+	local relative = cframe0:PointToObjectSpace(position1)
+	local sizeX = size0.x / 2
+	local sizeY = size0.x / 2
+	local sizeZ = size0.z / 2
+	local relX = relative.X
+	local relY = relative.Y
+	local relZ = relative.Z
+	--very ugly to look at unfortunately
+	local distX = if relX > sizeX then relX - sizeX elseif relX < -sizeX then relX + sizeX else 0
+	local distY = if relY > sizeY then relY - sizeY elseif relY < -sizeY then relY + sizeY else 0
+	local distZ = if relZ > sizeZ then relZ - sizeZ elseif relZ < -sizeZ then relZ + sizeZ else 0
+	return distX * distX + distY * distY + distZ * distZ < 1
 end
 local function boxInBox(cframe0, size0, cframe1, size1)
 	local m00, m01, m02, m03, m04, m05, m06, m07, m08, m09, m10, m11 = cframe0:GetComponents()
@@ -1102,5 +1116,6 @@ return {
 	CylinderInCylinder = CylinderInCylinder,
 	boxInSphere = boxInSphere,
 	sphereInSphere = sphereInSphere,
+	pointInBox = pointInBox,
 	boxInBox = boxInBox,
 }

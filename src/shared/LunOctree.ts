@@ -25,6 +25,8 @@ templatePart.Transparency = 0.5;
 templatePart.CastShadow = false;
 templatePart.Shape = Enum.PartType.Block;
 
+//I have to rewrite the octrees because there is a faster, smarter way to store the objects (using bitwise operations)
+
 //typescript is being REALLY annoying about vector and vector3s when they use the exact same type as of april
 function vectorToVector3(vector: vector): Vector3 {
   return new Vector3(vector.x, vector.y, vector.z);
@@ -71,33 +73,11 @@ export class OctreeNode<containType> {
   //the luau doesnt abide by public and private, but its nice for organization anyways.
   public cFrame: CFrame = EMPTY_CFRAME;
   public size: vector = EMPTY_VECTOR;
-  //public contains: Map<NewVector3, containType> = new Map();
-  //public shape: ShapeTypes = 'box';
-  constructor(
-    cFrame: CFrame,
-    size: vector
-    //shape: ShapeTypes
-    //depth: number,
-    //maxDepth: number,
-    //minSize: number,
-    //lenient: boolean,
-    //originNode: OctreeNode | undefined,
-    //parentNode: OctreeNode | undefined
-  ) {
-    //const newVector: vector = vector.create(x, y, z);
+  constructor(cFrame: CFrame, size: vector) {
+    //const newVector: vector = newVector(x, y, z);
 
     this.cFrame = cFrame; //need cframes so I can use ToWorldSpace and position stuff sensibly.
     this.size = size;
-    //this.shape = shape;
-
-    // this.maxDepth = maxDepth;
-    // this.minSize = minSize;
-    // this.lenientMinSize = lenient;
-    // this.depth = depth;
-    // this.originNode = originNode;
-    // this.parentNode = parentNode;
-    //show a visual representation
-    // this.display('Block');
   }
 
   display(shape: 'Block' | 'Ball') {
@@ -178,11 +158,12 @@ export class SpheretreeNode extends OctreeNode<Part> {
     radius: number,
     depth: number,
     maxDepth?: number,
-    divisionThreshold?: number
+    divisionThreshold?: number,
+    display?: boolean
   ) {
     super(
       new CFrame(position.x, position.y, position.z),
-      vector.create(radius, radius, radius)
+      newVector(radius, radius, radius)
     );
     this.position = position;
     this.radius = radius;
@@ -193,10 +174,27 @@ export class SpheretreeNode extends OctreeNode<Part> {
     if (divisionThreshold !== undefined) {
       this.divisionThreshold = divisionThreshold;
     }
+    if (display) {
+      this.display('Ball');
+    }
+  }
+
+  removeItem(itemPosition: vector) {
+    //
+  }
+
+  _insertItem(
+    itemPosition: vector,
+    item: Part | Model,
+    itemRadius: number,
+    childItems: childItemMap
+  ) {
+    //
+    childItems.set(itemPosition, [item, itemRadius]);
   }
 
   //insert a list of parts/models if they're touching the node
-  checkInsert(potentialHits: [Part | Model]) {
+  checkInsertItems(potentialHits: [Part | Model]) {
     const threshold = this.divisionThreshold;
     const depth = this.depth;
     const maxDepth = this.maxDepth;
@@ -257,12 +255,12 @@ export class SpheretreeNode extends OctreeNode<Part> {
 
       for (const i of BOTTOM_NODES) {
         for (const item of bottomItems) {
-          possibleHitNodes[i].checkInsert([item]);
+          possibleHitNodes[i].checkInsertItems([item]);
         }
       }
       for (const i of TOP_NODES) {
         for (const item of topItems) {
-          possibleHitNodes[i].checkInsert([item]);
+          possibleHitNodes[i].checkInsertItems([item]);
         }
       }
     }
@@ -272,8 +270,6 @@ export class SpheretreeNode extends OctreeNode<Part> {
   divideOctree(timesToDivide: number, currentDivision?: number) {
     //these values are defined here so they dont have to be searched for 8 times in the loop
     //is this a microoptimization? perhaps
-    // const childNodes: { [key: string]: OctreeNode } =
-    //   {} as unknown as { [key: string]: OctreeNode };
     const childNodes = new Map<vector, SpheretreeNode>();
     const radius = this.radius;
     const step = radius / 2;
@@ -288,7 +284,7 @@ export class SpheretreeNode extends OctreeNode<Part> {
     const newNodes = [];
     //create 8 properly sized, equally spaced nodes within the AABB of the Octree
     for (const stepChange of octreeDivisionPositions) {
-      const childPosition = vector.create(
+      const childPosition = newVector(
         positionX + stepChange.x * stepOffset,
         positionY + stepChange.y * stepOffset,
         positionZ + stepChange.z * stepOffset
@@ -312,32 +308,8 @@ export class SpheretreeNode extends OctreeNode<Part> {
   }
 }
 
-export function Create(
-  cFrame: CFrame,
-  size: vector
-  // sx: number,
-  // sy: number,
-  // sz: number,
-  // maxDepth: number,
-  // minSize: number,
-  // lenientMinSize: boolean
-  //shape: ShapeTypes
-) {
-  print('octree born');
-  //do sum
-  //const position: NewVector3 = vector.create(px, py, pz);
-  // const size: NewVector3 = vector.create(sx, sy, sz);
-  const newOctree = new OctreeNode(
-    cFrame,
-    size
-    //shape
-    // 0,
-    // maxDepth,
-    // minSize,
-    // lenientMinSize,
-    // undefined,
-    // undefined
-  );
+export function Create(cFrame: CFrame, size: vector) {
+  const newOctree = new OctreeNode(cFrame, size);
 
   return newOctree;
 }

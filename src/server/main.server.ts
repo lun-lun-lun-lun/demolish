@@ -9,6 +9,7 @@ import { makeHello } from 'shared/module';
 
 import LunOctree from 'shared/LunOctree';
 import { SpheretreeNode } from 'shared/LunOctree';
+import NodeOctree from 'shared/Nodetree';
 import cacheControl from 'shared/AutoCache';
 
 interface MapChildren {
@@ -24,8 +25,29 @@ const WORLD_CENTER = vector.create(0, 80, 0);
 const SPHERETREE_RADIUS = 100 * BOX_SPHERE_CONSTANT;
 const map = Workspace.WaitForChild('Map') as Folder & MapChildren;
 
-print(map.Block1);
-const mapSpheretree = new SpheretreeNode(WORLD_CENTER, SPHERETREE_RADIUS, 1, 5, 3);
+RunService.Heartbeat.Connect(function (deltaTime) {
+  // const binaryTree = NodeOctree.newOctree(500, 5);
+  // NodeOctree.InsertObjects(binaryTree, [
+  //   map.Block1,
+  //   map.Block2,
+  //   map.Block3,
+  //   map.Block4,
+  //   map.Block5
+  // ]);
+  // // for (const object of [map.Block1, map.Block2, map.Block3, map.Block4, map.Block5]) {
+  // //   NodeOctree.RemoveObject(binaryTree, object);
+  // // }
+  // NodeOctree.VisualizeOctree(binaryTree);
+});
+
+//print(map.Block1);
+// const mapSpheretree = new SpheretreeNode(WORLD_CENTER, SPHERETREE_RADIUS, 1, 5, 3);
+
+//TO DO
+//removals and movements
+// for spheretreenodes
+//build an example place
+//
 
 // const min = 5;
 // const max = 30;

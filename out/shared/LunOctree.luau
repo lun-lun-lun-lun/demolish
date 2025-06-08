@@ -16,6 +16,7 @@ templatePart.CanCollide = false
 templatePart.Transparency = 0.5
 templatePart.CastShadow = false
 templatePart.Shape = Enum.PartType.Block
+--I have to rewrite the octrees because there is a faster, smarter way to store the objects (using bitwise operations)
 --typescript is being REALLY annoying about vector and vector3s when they use the exact same type as of april
 local function vectorToVector3(vector)
 	return Vector3.new(vector.x, vector.y, vector.z)
@@ -44,29 +45,11 @@ do
 		return self:constructor(...) or self
 	end
 	function OctreeNode:constructor(cFrame, size)
-		--this.shape = shape;
-		-- this.maxDepth = maxDepth;
-		-- this.minSize = minSize;
-		-- this.lenientMinSize = lenient;
-		-- this.depth = depth;
-		-- this.originNode = originNode;
-		-- this.parentNode = parentNode;
-		--show a visual representation
-		-- this.display('Block');
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
-		--const newVector: vector = vector.create(x, y, z);
+		--const newVector: vector = newVector(x, y, z);
 		self.cFrame = cFrame
 		self.size = size
-		--this.shape = shape;
-		-- this.maxDepth = maxDepth;
-		-- this.minSize = minSize;
-		-- this.lenientMinSize = lenient;
-		-- this.depth = depth;
-		-- this.originNode = originNode;
-		-- this.parentNode = parentNode;
-		--show a visual representation
-		-- this.display('Block');
 	end
 	function OctreeNode:display(shape)
 		local nodePart = partCache:get()
@@ -127,8 +110,8 @@ do
 		local self = setmetatable({}, SpheretreeNode)
 		return self:constructor(...) or self
 	end
-	function SpheretreeNode:constructor(position, radius, depth, maxDepth, divisionThreshold)
-		super.constructor(self, CFrame.new(position.x, position.y, position.z), vector.create(radius, radius, radius))
+	function SpheretreeNode:constructor(position, radius, depth, maxDepth, divisionThreshold, display)
+		super.constructor(self, CFrame.new(position.x, position.y, position.z), newVector(radius, radius, radius))
 		self.position = EMPTY_VECTOR
 		self.radius = 0
 		self.childTrees = {}
@@ -145,8 +128,21 @@ do
 		if divisionThreshold ~= nil then
 			self.divisionThreshold = divisionThreshold
 		end
+		if display then
+			self:display("Ball")
+		end
 	end
-	function SpheretreeNode:checkInsert(potentialHits)
+	function SpheretreeNode:removeItem(itemPosition)
+		--
+	end
+	function SpheretreeNode:_insertItem(itemPosition, item, itemRadius, childItems)
+		--
+		local _childItems = childItems
+		local _itemPosition = itemPosition
+		local _arg1 = { item, itemRadius }
+		_childItems[_itemPosition] = _arg1
+	end
+	function SpheretreeNode:checkInsertItems(potentialHits)
 		local threshold = self.divisionThreshold
 		local depth = self.depth
 		local maxDepth = self.maxDepth
@@ -200,12 +196,12 @@ do
 			local possibleHitNodes = self:divideOctree(1)
 			for _, i in BOTTOM_NODES do
 				for _1, item in bottomItems do
-					possibleHitNodes[i + 1]:checkInsert({ item })
+					possibleHitNodes[i + 1]:checkInsertItems({ item })
 				end
 			end
 			for _, i in TOP_NODES do
 				for _1, item in topItems do
-					possibleHitNodes[i + 1]:checkInsert({ item })
+					possibleHitNodes[i + 1]:checkInsertItems({ item })
 				end
 			end
 		end
@@ -213,8 +209,6 @@ do
 	function SpheretreeNode:divideOctree(timesToDivide, currentDivision)
 		--these values are defined here so they dont have to be searched for 8 times in the loop
 		--is this a microoptimization? perhaps
-		-- const childNodes: { [key: string]: OctreeNode } =
-		--   {} as unknown as { [key: string]: OctreeNode };
 		local childNodes = {}
 		local radius = self.radius
 		local step = radius / 2
@@ -229,7 +223,7 @@ do
 		local newNodes = {}
 		--create 8 properly sized, equally spaced nodes within the AABB of the Octree
 		for _, stepChange in octreeDivisionPositions do
-			local childPosition = vector.create(positionX + stepChange.x * stepOffset, positionY + stepChange.y * stepOffset, positionZ + stepChange.z * stepOffset)
+			local childPosition = newVector(positionX + stepChange.x * stepOffset, positionY + stepChange.y * stepOffset, positionZ + stepChange.z * stepOffset)
 			local newNode = SpheretreeNode.new(childPosition, childRadius, depth + 1, maxDepth, divisionThreshold)
 			childNodes[childPosition] = newNode
 			table.insert(newNodes, newNode)
@@ -242,10 +236,6 @@ do
 	end
 end
 local function Create(cFrame, size)
-	print("octree born")
-	--do sum
-	--const position: NewVector3 = vector.create(px, py, pz);
-	-- const size: NewVector3 = vector.create(sx, sy, sz);
 	local newOctree = OctreeNode.new(cFrame, size)
 	return newOctree
 end
