@@ -10,28 +10,29 @@ const newVector = vector.create;
 const dotProduct = vector.dot;
 
 //vars
-const BOX_SPHERE_CONSTANT = math.sqrt(3) / 2;
+const BOX_SPHERE_CONSTANT = math.sqrt(3);
 const octreePositions = table.freeze([
-  newVector(0, 0, 0),
-  newVector(1, 0, 0),
-  newVector(0, 1, 0),
-  newVector(0, 0, 1),
-  newVector(0, 1, 1),
-  newVector(1, 0, 1),
-  newVector(1, 1, 0),
-  newVector(1, 1, 1)
+  //Really cool way to do this (and its faster when I combine it with the suffix logic from BinaryOctree)
+  newVector(0, 0, 0), //  0000 = 0
+  newVector(0, 0, 1), //  0001 = 1
+  newVector(0, 1, 0), //  0010 = 2
+  newVector(0, 1, 1), //  0011 = 3
+  newVector(1, 0, 0), //  0100 = 4
+  newVector(1, 0, 1), //  0101 = 5
+  newVector(1, 1, 0), //  0110 = 6
+  newVector(1, 1, 1) //   0111 = 7
 ]);
 const quadtreePositions = table.freeze([
   //Z is the ignored axis. substitute X with Z if needed.
-  newVector(0, 0, 0),
-  newVector(1, 0, 0),
-  newVector(0, 1, 0),
-  newVector(1, 1, 0)
+  newVector(0, 0, 0), //  0000 = 0
+  newVector(0, 1, 0), //  0001 = 1
+  newVector(1, 0, 0), //  0010 = 2
+  newVector(1, 1, 0) //   0011 = 3
 ]);
 const dualtreePositions = table.freeze([
   //Y and Z are the ignored axes.
-  newVector(1, 0, 0),
-  newVector(0, 0, 0)
+  newVector(0, 0, 0), //  0000 = 0
+  newVector(1, 0, 0) //   0001 = 1
 ]);
 
 const EMPTY_VECTOR = vector.zero;
@@ -107,15 +108,22 @@ export class NodeTree {
     }
   }
 
-  display(shape: 'Block' | 'Ball', node?: number, cframe?: CFrame) {
+  //instead of having a getposition function, we can cache the global vector positions of each.
+  //we dont need the whole cframe
+  // _getPosition() {}
+
+  display(shape: 'Block' | 'Ball', node?: number, cframe?: CFrame, size?: vector) {
     const baseSize = this.size;
+    const baseSizeX = baseSize.x;
     const children = this.children;
     let startingNode = 1;
     if (node !== undefined) startingNode = node;
+
     let partCframe = this.cFrame;
     if (cframe !== undefined) partCframe = cframe;
     const position = partCframe.Position;
     if (children[startingNode * 8] !== undefined) {
+      const nodeRemainder = startingNode - (startingNode % 8);
       for (let i = 0; i <= 7; i++) {
         //we'll need to add additional handling for divide2 and divide4 later, this is a start
         //if theres less than 8 siblings, stop and assume the parent node did divide2 or divide4
@@ -124,6 +132,20 @@ export class NodeTree {
         // }
 
         // const newPosition = newVector(position.X);
+
+        print(octreePositions[startingNode % 8]); //hhhh
+        const sizeDivider = math.pow(2, nodeRemainder / 8);
+        const baseAxisSize = baseSizeX / sizeDivider;
+        // if (startingNode !== 1) {
+        //   //startingnode is in [8, inf) (im ignoring the holes after 8 here.)
+        //   nodePart.Size = vector.create(
+        //     baseAxisSize,
+        //     baseAxisSize,
+        //     baseAxisSize
+        //   ) as unknown as Vector3;
+        // } else {
+        //   nodePart.Size = this.size as unknown as Vector3;
+        // }
         this.display(shape, startingNode * 8 + i, cframe);
       }
     } else {
@@ -134,13 +156,14 @@ export class NodeTree {
         math.clamp(startingNode * 2, 1, 255)
       );
       nodePart.CFrame = partCframe;
-      nodePart.Size = this.size as unknown as Vector3;
+      //will optimize further later by calcing the new size in the previous function and sending it to the children
+      //alsoo need to do a less.. silly calc in general
+
       nodePart.Parent = Workspace;
       nodePart.Shape = Enum.PartType[shape];
-      print(children, startingNode);
     }
 
-    //
+    //eeeeeee
 
     // while #UnvisualisedNodes > 0 do
     //   local Node = table.remove(UnvisualisedNodes)
@@ -166,7 +189,9 @@ export class NodeTree {
     const children = this.children;
     const shiftedNode = node * 8; //children are at
     for (let i = 0; i <= 7; i++) {
-      children[shiftedNode + i] = [] as unknown as [item];
+      children[shiftedNode + i - 1] = [] as unknown as [item];
+      if (shiftedNode + i - 1 > 16) return;
+      this.divide8(shiftedNode + i - 1);
       // this.subNodes[shiftedNode + i] = [];
     }
   }

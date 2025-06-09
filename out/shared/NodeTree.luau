@@ -6,10 +6,10 @@ local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", 
 local newVector = vector.create
 local dotProduct = vector.dot
 --vars
-local BOX_SPHERE_CONSTANT = math.sqrt(3) / 2
-local octreePositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(0, 0, 1), newVector(0, 1, 1), newVector(1, 0, 1), newVector(1, 1, 0), newVector(1, 1, 1) })
-local quadtreePositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0), newVector(0, 1, 0), newVector(1, 1, 0) })
-local dualtreePositions = table.freeze({ newVector(1, 0, 0), newVector(0, 0, 0) })
+local BOX_SPHERE_CONSTANT = math.sqrt(3)
+local octreePositions = table.freeze({ newVector(0, 0, 0), newVector(0, 0, 1), newVector(0, 1, 0), newVector(0, 1, 1), newVector(1, 0, 0), newVector(1, 0, 1), newVector(1, 1, 0), newVector(1, 1, 1) })
+local quadtreePositions = table.freeze({ newVector(0, 0, 0), newVector(0, 1, 0), newVector(1, 0, 0), newVector(1, 1, 0) })
+local dualtreePositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0) })
 local EMPTY_VECTOR = vector.zero
 local EMPTY_CFRAME = CFrame.new(0, 0, 0)
 local templatePart = Instance.new("Part")
@@ -73,8 +73,9 @@ do
 			self.maxDepth = maxDepth
 		end
 	end
-	function NodeTree:display(shape, node, cframe)
+	function NodeTree:display(shape, node, cframe, size)
 		local baseSize = self.size
+		local baseSizeX = baseSize.x
 		local children = self.children
 		local startingNode = 1
 		if node ~= nil then
@@ -84,25 +85,41 @@ do
 		if cframe ~= nil then
 			partCframe = cframe
 		end
+		local position = partCframe.Position
 		if children[startingNode * 8 + 1] ~= nil then
+			local nodeRemainder = startingNode - (startingNode % 8)
 			for i = 0, 7 do
 				--we'll need to add additional handling for divide2 and divide4 later, this is a start
 				--if theres less than 8 siblings, stop and assume the parent node did divide2 or divide4
 				-- if (children[startingNode * 8 + i] === undefined) {
 				--   break;
 				-- }
+				-- const newPosition = newVector(position.X);
+				print(octreePositions[startingNode % 8 + 1])
+				local sizeDivider = math.pow(2, nodeRemainder / 8)
+				local baseAxisSize = baseSizeX / sizeDivider
+				-- if (startingNode !== 1) {
+				--   //startingnode is in [8, inf) (im ignoring the holes after 8 here.)
+				--   nodePart.Size = vector.create(
+				--     baseAxisSize,
+				--     baseAxisSize,
+				--     baseAxisSize
+				--   ) as unknown as Vector3;
+				-- } else {
+				--   nodePart.Size = this.size as unknown as Vector3;
+				-- }
 				self:display(shape, startingNode * 8 + i, cframe)
 			end
 		else
 			local nodePart = partCache:get()
 			nodePart.Color = Color3.fromRGB(math.clamp(startingNode * 1.5, 1, 255), math.clamp(startingNode * 1, 1, 255), math.clamp(startingNode * 2, 1, 255))
-			nodePart.CFrame = self.cFrame
-			nodePart.Size = self.size
+			nodePart.CFrame = partCframe
+			--will optimize further later by calcing the new size in the previous function and sending it to the children
+			--alsoo need to do a less.. silly calc in general
 			nodePart.Parent = Workspace
 			nodePart.Shape = Enum.PartType[shape]
-			print(children, startingNode)
 		end
-		--
+		--eeeeeee
 		-- while #UnvisualisedNodes > 0 do
 		--   local Node = table.remove(UnvisualisedNodes)
 		--   local NodePosition = GetNodePositionAndSize(BinaryOctree,Node[1])
@@ -121,7 +138,11 @@ do
 		local children = self.children
 		local shiftedNode = node * 8
 		for i = 0, 7 do
-			children[shiftedNode + i + 1] = {}
+			children[shiftedNode + i] = {}
+			if shiftedNode + i - 1 > 16 then
+				return nil
+			end
+			self:divide8(shiftedNode + i - 1)
 			-- this.subNodes[shiftedNode + i] = [];
 		end
 	end

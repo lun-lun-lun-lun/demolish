@@ -14,7 +14,7 @@ Voxel destruction physics for Roblox, written in TypeScript, using Octrees to su
   
 ## Nice To Have
 - Buffer usage to compress data and send it to the client efficiently
-- Cache parts ahead of time instead of creating a new part for each destruction\
+- Cache parts ahead of time instead of creating a new part for each destruction
 - Parts referenced without using the actual instance (?)
 - Spherical Octrees for broad phase detection (JUST TRUST ME)
 - Custom part replication
