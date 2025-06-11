@@ -1,3 +1,6 @@
+//!native
+//!optimize 2
+
 import { Workspace } from '@rbxts/services';
 import { AutoCache } from 'shared/AutoCache';
 import { pointInBox } from './CollisionCheck';
@@ -43,7 +46,7 @@ const templatePart = new Instance('Part');
   templatePart.Parent = Workspace;
   templatePart.Anchored = true;
   templatePart.CanCollide = false;
-  templatePart.Transparency = 0.5;
+  templatePart.Transparency = 0;
   templatePart.CastShadow = false;
   templatePart.Shape = Enum.PartType.Block;
 }
@@ -164,70 +167,68 @@ export class NodeTree {
 
   // 	return BinaryOctree.OffsetPosition + Position,HalfSize * 2
   // end
-  display(shape: 'Block' | 'Ball', node?: number) {
+  display(shape: 'Block' | 'Ball', node?: number, time?: number) {
     const children = this.children;
     let startingNode = 1;
     if (node !== undefined) startingNode = node;
     // task.wait(2);
     // print(children[startingNode * 8], startingNode, children);
+    //if the node has children...
     if (children[startingNode * 8] !== undefined) {
-      const nodeRemainder = startingNode - (startingNode % 8);
       for (let i = 0; i <= 7; i++) {
         this.display(shape, startingNode * 8 + i);
       }
     } else {
       const nodePart = partCache.get() as Part;
       nodePart.Color = Color3.fromRGB(
-        math.random(1, 255),
-        math.random(1, 255),
-        math.random(1, 255)
+        // math.random(1, 255),
+        // math.random(1, 255),
+        // math.random(1, 255)
+        255,
+        255,
+        0
       );
       const [position, size] = this._getNodeOffsetAndSize(startingNode);
 
-      nodePart.CFrame = this.cFrame.ToWorldSpace(
-        new CFrame(position as unknown as Vector3)
-      );
       nodePart.Size = size as unknown as Vector3;
       //will optimize further later by calcing the new size in the previous function and sending it to the children
       //alsoo need to do a less.. silly calc in general
 
-      nodePart.Parent = Workspace;
       nodePart.Shape = Enum.PartType[shape];
+      nodePart.Parent = Workspace;
+      nodePart.CFrame = this.cFrame.ToWorldSpace(
+        new CFrame(position as unknown as Vector3)
+      );
+      if (time !== undefined) {
+        task.spawn(function () {
+          task.wait(time);
+          partCache.return(nodePart);
+        });
+      }
     }
-
-    //eeeeeee
-
-    // while #UnvisualisedNodes > 0 do
-    //   local Node = table.remove(UnvisualisedNodes)
-    //   local NodePosition = GetNodePositionAndSize(BinaryOctree,Node[1])
-
-    //   MakeVisualisePart(Node.Size,NodePosition,Node[1])
-
-    //   for i = 0,7 do
-    //     local HashIndex = Node[1] * 8 + i
-
-    //     if BinaryOctree.Nodes[HashIndex] == nil then continue end
-
-    //     table.insert(UnvisualisedNodes,{HashIndex, Size = Node.Size / 2})
-    //   end
-    // end
-
-    // const depth = this.depth;
   }
 
-  divide8(node: number, divisions?: number) {
+  divide8(node: number, timesToDivide: number, divisions?: number) {
     // const depth = this.depth;
     // const childNodes = this.childNodes;
+    if (divisions === undefined) divisions = 0;
     const children = this.children;
     const shiftedNode = node * 8; //children are at
-    if (divisions === undefined) divisions = 1;
-    print('isabv', node, divisions > this.maxDepth);
-    if (divisions > this.maxDepth) return;
+    let newNodes: number[] = [] as unknown as number[];
+
+    if (divisions >= timesToDivide) return newNodes;
     for (let i = 0; i <= 7; i++) {
       children[shiftedNode + i - 1] = [] as unknown as [item];
-      this.divide8(shiftedNode + i, divisions + 1);
+      const additions: number[] = this.divide8(
+        shiftedNode + i,
+        timesToDivide,
+        divisions + 1
+      );
+      newNodes.push(shiftedNode + i);
+      newNodes = [...newNodes, ...additions];
       // this.subNodes[shiftedNode + i] = [];
     }
+    return newNodes;
   }
 }
 

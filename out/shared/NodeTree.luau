@@ -1,3 +1,5 @@
+--!native
+--!optimize 2
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
@@ -18,7 +20,7 @@ do
 	templatePart.Parent = Workspace
 	templatePart.Anchored = true
 	templatePart.CanCollide = false
-	templatePart.Transparency = 0.5
+	templatePart.Transparency = 0
 	templatePart.CastShadow = false
 	templatePart.Shape = Enum.PartType.Block
 end
@@ -107,7 +109,7 @@ do
 		end
 		return { vector.create(newPosition[1], newPosition[2], newPosition[3]), vector.create(stepX * 4, stepY * 4, stepZ * 4) }
 	end
-	function NodeTree:display(shape, node)
+	function NodeTree:display(shape, node, time)
 		local children = self.children
 		local startingNode = 1
 		if node ~= nil then
@@ -115,54 +117,59 @@ do
 		end
 		-- task.wait(2);
 		-- print(children[startingNode * 8], startingNode, children);
+		--if the node has children...
 		if children[startingNode * 8 + 1] ~= nil then
-			local nodeRemainder = startingNode - (startingNode % 8)
 			for i = 0, 7 do
 				self:display(shape, startingNode * 8 + i)
 			end
 		else
 			local nodePart = partCache:get()
-			nodePart.Color = Color3.fromRGB(math.random(1, 255), math.random(1, 255), math.random(1, 255))
+			nodePart.Color = Color3.fromRGB(255, 255, 0)
 			local _binding = self:_getNodeOffsetAndSize(startingNode)
 			local position = _binding[1]
 			local size = _binding[2]
-			nodePart.CFrame = self.cFrame:ToWorldSpace(CFrame.new(position))
 			nodePart.Size = size
 			--will optimize further later by calcing the new size in the previous function and sending it to the children
 			--alsoo need to do a less.. silly calc in general
-			nodePart.Parent = Workspace
 			nodePart.Shape = Enum.PartType[shape]
+			nodePart.Parent = Workspace
+			nodePart.CFrame = self.cFrame:ToWorldSpace(CFrame.new(position))
+			if time ~= nil then
+				task.spawn(function()
+					task.wait(time)
+					partCache["return"](partCache, nodePart)
+				end)
+			end
 		end
-		--eeeeeee
-		-- while #UnvisualisedNodes > 0 do
-		--   local Node = table.remove(UnvisualisedNodes)
-		--   local NodePosition = GetNodePositionAndSize(BinaryOctree,Node[1])
-		--   MakeVisualisePart(Node.Size,NodePosition,Node[1])
-		--   for i = 0,7 do
-		--     local HashIndex = Node[1] * 8 + i
-		--     if BinaryOctree.Nodes[HashIndex] == nil then continue end
-		--     table.insert(UnvisualisedNodes,{HashIndex, Size = Node.Size / 2})
-		--   end
-		-- end
-		-- const depth = this.depth;
 	end
-	function NodeTree:divide8(node, divisions)
+	function NodeTree:divide8(node, timesToDivide, divisions)
 		-- const depth = this.depth;
 		-- const childNodes = this.childNodes;
+		if divisions == nil then
+			divisions = 0
+		end
 		local children = self.children
 		local shiftedNode = node * 8
-		if divisions == nil then
-			divisions = 1
-		end
-		print("isabv", node, divisions > self.maxDepth)
-		if divisions > self.maxDepth then
-			return nil
+		local newNodes = {}
+		if divisions >= timesToDivide then
+			return newNodes
 		end
 		for i = 0, 7 do
 			children[shiftedNode + i] = {}
-			self:divide8(shiftedNode + i, divisions + 1)
+			local additions = self:divide8(shiftedNode + i, timesToDivide, divisions + 1)
+			local _newNodes = newNodes
+			local _arg0 = shiftedNode + i
+			table.insert(_newNodes, _arg0)
+			local _array = {}
+			local _length = #_array
+			local _newNodesLength = #newNodes
+			table.move(newNodes, 1, _newNodesLength, _length + 1, _array)
+			_length += _newNodesLength
+			table.move(additions, 1, #additions, _length + 1, _array)
+			newNodes = _array
 			-- this.subNodes[shiftedNode + i] = [];
 		end
+		return newNodes
 	end
 end
 --const SubdivideThreshold = 1 //replacing with a per-octree solution
