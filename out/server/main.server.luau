@@ -201,7 +201,7 @@ while idk == 1 do
 			end
 		end
 	end
-	task.wait(0.02)
+	task.wait()
 end
 -- for (const node of hitNodes) {
 --   partTree.display('Block', node);

@@ -201,7 +201,7 @@ while (idk === 1) {
     }
   }
 
-  task.wait(0.02);
+  task.wait();
 }
 
 // for (const node of hitNodes) {
