@@ -7,9 +7,10 @@ local newVector = vector.create
 local dotProduct = vector.dot
 --vars
 local BOX_SPHERE_CONSTANT = math.sqrt(3)
-local octreePositions = table.freeze({ newVector(0, 0, 0), newVector(0, 0, 1), newVector(0, 1, 0), newVector(0, 1, 1), newVector(1, 0, 0), newVector(1, 0, 1), newVector(1, 1, 0), newVector(1, 1, 1) })
-local quadtreePositions = table.freeze({ newVector(0, 0, 0), newVector(0, 1, 0), newVector(1, 0, 0), newVector(1, 1, 0) })
-local dualtreePositions = table.freeze({ newVector(0, 0, 0), newVector(1, 0, 0) })
+local O = -1
+local octreePositions = table.freeze({ newVector(O, O, O), newVector(O, O, 1), newVector(O, 1, O), newVector(O, 1, 1), newVector(1, O, O), newVector(1, O, 1), newVector(1, 1, O), newVector(1, 1, 1) })
+local quadtreePositions = table.freeze({ newVector(O, O, O), newVector(O, 1, O), newVector(1, O, O), newVector(1, 1, O) })
+local dualtreePositions = table.freeze({ newVector(O, O, O), newVector(1, O, O) })
 local EMPTY_VECTOR = vector.zero
 local EMPTY_CFRAME = CFrame.new(0, 0, 0)
 local templatePart = Instance.new("Part")
@@ -73,6 +74,35 @@ do
 			self.maxDepth = maxDepth
 		end
 	end
+	function NodeTree:_getNodePositionAndSize(node)
+		--the length of the binary sequence for our node number
+		--we subtract one because the for loop will run at least once
+		--additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes, ie those in: 1 U [8,15] U [64,71] etc
+		local binaryLength = math.max(32 - bit32.countlz(node), 0) - 1
+		local stepX, stepY, stepZ = self.size.x / 4, self.size.y / 4, self.size.z / 4
+		local newPosition = { 0, 0, 0 }
+		--traverse through the multiple of 3 by 3s
+		do
+			local i = 1
+			local _shouldIncrement = false
+			while true do
+				if _shouldIncrement then
+					i += 3
+				else
+					_shouldIncrement = true
+				end
+				if not (i <= binaryLength) then
+					break
+				end
+				--from the right, extract 3 bits from the binary sequence and convert it to an actual number
+				local octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1
+				local octreePosition = octreePositions[octreePositionIndex + 2]
+				local stepAxes = { stepX * octreePosition.x, stepY * octreePosition.y, stepZ * octreePosition.z }
+				--we only need to make a vector of this at the end. for now, we use an array, since theyre slightly faster
+				newPosition = { newPosition[1] + stepAxes[1], newPosition[2] + stepAxes[2], newPosition[3] + stepAxes[3] }
+			end
+		end
+	end
 	function NodeTree:display(shape, node, cframe, size)
 		local baseSize = self.size
 		local baseSizeX = baseSize.x
@@ -103,7 +133,7 @@ do
 				--   nodePart.Size = vector.create(
 				--     baseAxisSize,
 				--     baseAxisSize,
-				--     baseAxisSize
+				--     baseAxisSizeeeee
 				--   ) as unknown as Vector3;
 				-- } else {
 				--   nodePart.Size = this.size as unknown as Vector3;

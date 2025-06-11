@@ -11,28 +11,29 @@ const dotProduct = vector.dot;
 
 //vars
 const BOX_SPHERE_CONSTANT = math.sqrt(3);
+const O = -1; //only using this so its easier to see the comparison to binary
 const octreePositions = table.freeze([
   //Really cool way to do this (and its faster when I combine it with the suffix logic from BinaryOctree)
-  newVector(0, 0, 0), //  0000 = 0
-  newVector(0, 0, 1), //  0001 = 1
-  newVector(0, 1, 0), //  0010 = 2
-  newVector(0, 1, 1), //  0011 = 3
-  newVector(1, 0, 0), //  0100 = 4
-  newVector(1, 0, 1), //  0101 = 5
-  newVector(1, 1, 0), //  0110 = 6
+  newVector(O, O, O), //  0000 = 0
+  newVector(O, O, 1), //  0001 = 1
+  newVector(O, 1, O), //  0010 = 2
+  newVector(O, 1, 1), //  0011 = 3
+  newVector(1, O, O), //  0100 = 4
+  newVector(1, O, 1), //  0101 = 5
+  newVector(1, 1, O), //  0110 = 6
   newVector(1, 1, 1) //   0111 = 7
 ]);
 const quadtreePositions = table.freeze([
   //Z is the ignored axis. substitute X with Z if needed.
-  newVector(0, 0, 0), //  0000 = 0
-  newVector(0, 1, 0), //  0001 = 1
-  newVector(1, 0, 0), //  0010 = 2
-  newVector(1, 1, 0) //   0011 = 3
+  newVector(O, O, O), //  0000 = 0
+  newVector(O, 1, O), //  0001 = 1
+  newVector(1, O, O), //  0010 = 2
+  newVector(1, 1, O) //   0011 = 3
 ]);
 const dualtreePositions = table.freeze([
   //Y and Z are the ignored axes.
-  newVector(0, 0, 0), //  0000 = 0
-  newVector(1, 0, 0) //   0001 = 1
+  newVector(O, O, O), //  0000 = 0
+  newVector(1, O, O) //   0001 = 1
 ]);
 
 const EMPTY_VECTOR = vector.zero;
@@ -111,7 +112,49 @@ export class NodeTree {
   //instead of having a getposition function, we can cache the global vector positions of each.
   //we dont need the whole cframe
   // _getPosition() {}
+  _getNodePositionAndSize(node: number) {
+    //the length of the binary sequence for our node number
+    //we subtract one because the for loop will run at least once
+    //additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes, ie those in: 1 U [8,15] U [64,71] etc
+    const binaryLength = math.max(32 - bit32.countlz(node), 0) - 1;
+    let [stepX, stepY, stepZ] = [this.size.x / 4, this.size.y / 4, this.size.z / 4];
+    let newPosition = [0, 0, 0];
+    //traverse through the multiple of 3 by 3s
 
+    for (let i = 1; i <= binaryLength; i += 3) {
+      //from the right, extract 3 bits from the binary sequence and convert it to an actual number
+      const octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1;
+      const octreePosition = octreePositions[octreePositionIndex + 1];
+      const stepAxes = [
+        stepX * octreePosition.x,
+        stepY * octreePosition.y,
+        stepZ * octreePosition.z
+      ];
+      //we only need to make a vector of this at the end. for now, we use an array, since theyre slightly faster
+      newPosition = [
+        newPosition[0] + stepAxes[0],
+        newPosition[1] + stepAxes[1],
+        newPosition[2] + stepAxes[2]
+      ];
+      i += 3;
+      [stepX, stepY, stepZ] = [stepX / 2, stepY / 2, stepZ / 2];
+    }
+    return vector.create();
+  }
+  // 	local NumberLength = math.max(32-bit32.countlz(Node), 0) - 1
+  // 	local Position = Vector3.zero
+
+  // 	for Index = 1,NumberLength,3 do
+  // 		local Suffix = bit32.extract(Node,NumberLength - Index - 2,3)
+
+  // 		Position = Position + (HalfSize * SuffixToOrder[Suffix + 1])
+
+  // 		Index += 3
+  // 		HalfSize = HalfSize / 2
+  // 	end
+
+  // 	return BinaryOctree.OffsetPosition + Position,HalfSize * 2
+  // end
   display(shape: 'Block' | 'Ball', node?: number, cframe?: CFrame, size?: vector) {
     const baseSize = this.size;
     const baseSizeX = baseSize.x;
@@ -141,7 +184,7 @@ export class NodeTree {
         //   nodePart.Size = vector.create(
         //     baseAxisSize,
         //     baseAxisSize,
-        //     baseAxisSize
+        //     baseAxisSizeeeee
         //   ) as unknown as Vector3;
         // } else {
         //   nodePart.Size = this.size as unknown as Vector3;
