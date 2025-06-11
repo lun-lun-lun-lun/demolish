@@ -109,6 +109,7 @@ export class AutoCache {
       item.Color = template.Color;
       item.Shape = template.Shape;
       item.Size = template.Size; //not sure if this works, vectors are weird in rbx
+      item.CFrame = this.hiddenCframe;
       this._addItem(item);
     } else if (item.IsA('Model') && template.IsA('Model')) {
       //item.ScaleTo(template.GetScale());

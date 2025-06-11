@@ -4,7 +4,9 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local NodeTree = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "NodeTree").NodeTree
+local partCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "NodeTree").partCache
 local boxInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInSphere
+local boxInBox = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInBox
 local cacheControl = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").default
 local BOX_SPHERE_CONSTANT = math.sqrt(3) / 2
 local WORLD_CENTER = vector.create(0, 20, 0)
@@ -15,18 +17,18 @@ local destroyers = Workspace:WaitForChild("Destroyers")
 local function getBinaryLength(num)
 	return math.max(32 - bit32.countlz(num), 0) - 1
 end
-local function demolish(part, subtractionSphere, divisionLimit)
+local function demolishBox(part, subtractionPart, divisionLimit)
 	if divisionLimit == nil then
 		divisionLimit = 2
 	end
 	local partCframe = part.CFrame
 	local partSize = part.Size
-	local spherePosition = subtractionSphere.Position
-	local sphereRadius = subtractionSphere.Size.X / 2
+	-- const spherePosition = subtractionSphere.Position as unknown as vector;
+	-- const sphereRadius = subtractionSphere.Size.X / 2;
 	local partTree = NodeTree.new(partCframe, partSize)
 	local freeNodes = {}
 	local hitNodes = {}
-	if boxInSphere(partCframe, partSize, spherePosition, sphereRadius) == true then
+	if boxInBox(partCframe, partSize, subtractionPart.CFrame, subtractionPart.Size) then
 		local nodesToCheck = partTree:divide8(1, 1)
 		while #nodesToCheck > 0 do
 			do
@@ -42,12 +44,11 @@ local function demolish(part, subtractionSphere, divisionLimit)
 						break
 					end
 					local node = nodesToCheck[math.max(i - 1, 0) + 1]
-					print(i, nodesToCheck, node)
 					local _binding = partTree:_getNodeOffsetAndSize(node)
 					local nodePosition = _binding[1]
 					local nodeSize = _binding[2]
 					local nodeCframe = partTree.cFrame:ToWorldSpace(CFrame.new(nodePosition))
-					local nodeHit = boxInSphere(nodeCframe, nodeSize, spherePosition, sphereRadius)
+					local nodeHit = boxInBox(nodeCframe, nodeSize, subtractionPart.CFrame, subtractionPart.Size)
 					local underLimit = getBinaryLength(node) / 3 <= divisionLimit
 					if nodeHit and underLimit then
 						local newNodesToCheck = partTree:divide8(node, 1)
@@ -89,19 +90,118 @@ local function demolish(part, subtractionSphere, divisionLimit)
 	end
 	return { freeNodes, hitNodes, partTree }
 end
-cacheControl.increase = 1
+local function demolishSphere(part, subtractionPart, divisionLimit)
+	if divisionLimit == nil then
+		divisionLimit = 2
+	end
+	local partCframe = part.CFrame
+	local partSize = part.Size
+	-- const spherePosition = subtractionSphere.Position as unknown as vector;
+	-- const sphereRadius = subtractionSphere.Size.X / 2;
+	local partTree = NodeTree.new(partCframe, partSize)
+	local freeNodes = {}
+	local hitNodes = {}
+	if boxInSphere(partCframe, partSize, subtractionPart.Position, subtractionPart.Size.X / 2) then
+		local nodesToCheck = partTree:divide8(1, 1)
+		while #nodesToCheck > 0 do
+			do
+				local i = #nodesToCheck
+				local _shouldIncrement = false
+				while true do
+					if _shouldIncrement then
+						i = i - 1
+					else
+						_shouldIncrement = true
+					end
+					if not (i > 0) then
+						break
+					end
+					local node = nodesToCheck[math.max(i - 1, 0) + 1]
+					local _binding = partTree:_getNodeOffsetAndSize(node)
+					local nodePosition = _binding[1]
+					local nodeSize = _binding[2]
+					local nodeCframe = partTree.cFrame:ToWorldSpace(CFrame.new(nodePosition))
+					local nodeHit = boxInSphere(nodeCframe, nodeSize, subtractionPart.Position, subtractionPart.Size.X / 2)
+					local underLimit = getBinaryLength(node) / 3 <= divisionLimit
+					if nodeHit and underLimit then
+						local newNodesToCheck = partTree:divide8(node, 1)
+						local _nodesToCheck = nodesToCheck
+						local _arg0 = math.max(i - 1, 0)
+						table.remove(_nodesToCheck, _arg0 + 1)
+						local _array = {}
+						local _length = #_array
+						local _nodesToCheckLength = #nodesToCheck
+						table.move(nodesToCheck, 1, _nodesToCheckLength, _length + 1, _array)
+						_length += _nodesToCheckLength
+						table.move(newNodesToCheck, 1, #newNodesToCheck, _length + 1, _array)
+						nodesToCheck = _array
+						-- hitNodes.push(node);
+					elseif nodeHit then
+						table.insert(hitNodes, node)
+						local _nodesToCheck = nodesToCheck
+						local _arg0 = math.max(i - 1, 0)
+						table.remove(_nodesToCheck, _arg0 + 1)
+					else
+						table.insert(freeNodes, node)
+						local _nodesToCheck = nodesToCheck
+						local _arg0 = math.max(i - 1, 0)
+						table.remove(_nodesToCheck, _arg0 + 1)
+					end
+					-- print(getBinaryLength(node));
+					-- if (nodeHit === true && underLimit === true) {
+					--   // nodesToCheck = [...nodesToCheck, ...partTree.divide8(node, 1)];
+					-- } else if (nodeHit === false) {
+					--   freeNodes.push(node);
+					--   nodesToCheck.remove(i);
+					-- } else if (underLimit === false) {
+					--   hitNodes.push(node);
+					--   nodesToCheck.remove(i);
+					-- }
+				end
+			end
+		end
+	end
+	return { freeNodes, hitNodes, partTree }
+end
+cacheControl.increase = 2
 map.Block3.Transparency = 1
 local idk = 1
+local displayParts = {}
+local lastCframe = CFrame.new()
+-- let currentTree: NodeTree = undefined as unknown as NodeTree;
 while idk == 1 do
 	--
-	local _binding = demolish(map.Block3, destroyers.RedBall, 2)
-	local freeNodes = _binding[1]
-	local hitNodes = _binding[2]
-	local partTree = _binding[3]
-	for _, node in freeNodes do
-		partTree:display("Block", node, 0.1)
+	local sameCFrame = destroyers.RedBall.CFrame:FuzzyEq(lastCframe)
+	if sameCFrame == true then
+		--
+	else
+		lastCframe = destroyers.RedBall.CFrame
+		local _binding = demolishSphere(map.Block3, destroyers.RedBall, 3)
+		local freeNodes = _binding[1]
+		local hitNodes = _binding[2]
+		local partTree = _binding[3]
+		--no nodes hit
+		for _, dPart in displayParts do
+			partCache["return"](partCache, dPart)
+			displayParts = {}
+		end
+		if #hitNodes == 0 then
+			map.Block3.Transparency = 0
+		else
+			map.Block3.Transparency = 1
+			for _, node in freeNodes do
+				local _array = {}
+				local _length = #_array
+				local _displayPartsLength = #displayParts
+				table.move(displayParts, 1, _displayPartsLength, _length + 1, _array)
+				_length += _displayPartsLength
+				local _array_1 = partTree:display("Block", node, nil)
+				table.move(_array_1, 1, #_array_1, _length + 1, _array)
+				displayParts = _array
+			end
+		end
 	end
-	task.wait(0.1)
+	task.wait(0.02)
 end
 -- for (const node of hitNodes) {
 --   partTree.display('Block', node);

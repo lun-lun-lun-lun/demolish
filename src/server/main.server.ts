@@ -11,6 +11,7 @@ import LunOctree from 'shared/LunOctree';
 import { SpheretreeNode } from 'shared/LunOctree';
 import { NodeTree } from 'shared/NodeTree';
 
+import { partCache } from 'shared/NodeTree';
 import { pointInBox } from 'shared/CollisionCheck';
 import { boxInSphere } from 'shared/CollisionCheck';
 import { sphereInSphere } from 'shared/CollisionCheck';
@@ -41,26 +42,37 @@ function getBinaryLength(num: number) {
   return math.max(32 - bit32.countlz(num), 0) - 1;
 }
 
-function demolish(part: Part, subtractionSphere: Part, divisionLimit?: number) {
+function demolishBox(part: Part, subtractionPart: Part, divisionLimit?: number) {
   if (divisionLimit === undefined) divisionLimit = 2;
   const partCframe = part.CFrame;
   const partSize = part.Size as unknown as vector;
-  const spherePosition = subtractionSphere.Position as unknown as vector;
-  const sphereRadius = subtractionSphere.Size.X / 2;
+  // const spherePosition = subtractionSphere.Position as unknown as vector;
+  // const sphereRadius = subtractionSphere.Size.X / 2;
   const partTree = new NodeTree(partCframe, partSize);
   const freeNodes: number[] = [];
   const hitNodes: number[] = [];
-  if (boxInSphere(partCframe, partSize, spherePosition, sphereRadius) === true) {
+  if (
+    boxInBox(
+      partCframe,
+      partSize,
+      subtractionPart.CFrame,
+      subtractionPart.Size as unknown as vector
+    )
+  ) {
     let nodesToCheck = partTree.divide8(1, 1);
     while (nodesToCheck.size() > 0) {
       for (let i = nodesToCheck.size(); i > 0; i = i - 1) {
         const node = nodesToCheck[math.max(i - 1, 0)];
-        print(i, nodesToCheck, node);
         const [nodePosition, nodeSize] = partTree._getNodeOffsetAndSize(node);
         const nodeCframe = partTree.cFrame.ToWorldSpace(
           new CFrame(nodePosition as unknown as Vector3)
         );
-        const nodeHit = boxInSphere(nodeCframe, nodeSize, spherePosition, sphereRadius);
+        const nodeHit = boxInBox(
+          nodeCframe,
+          nodeSize,
+          subtractionPart.CFrame,
+          subtractionPart.Size as unknown as vector
+        );
         const underLimit = getBinaryLength(node) / 3 <= divisionLimit;
         if (nodeHit && underLimit) {
           const newNodesToCheck = partTree.divide8(node, 1);
@@ -93,16 +105,103 @@ function demolish(part: Part, subtractionSphere: Part, divisionLimit?: number) {
   return [freeNodes, hitNodes, partTree] as [number[], number[], NodeTree];
 }
 
-cacheControl.increase = 1;
+function demolishSphere(part: Part, subtractionPart: Part, divisionLimit?: number) {
+  if (divisionLimit === undefined) divisionLimit = 2;
+  const partCframe = part.CFrame;
+  const partSize = part.Size as unknown as vector;
+  // const spherePosition = subtractionSphere.Position as unknown as vector;
+  // const sphereRadius = subtractionSphere.Size.X / 2;
+  const partTree = new NodeTree(partCframe, partSize);
+  const freeNodes: number[] = [];
+  const hitNodes: number[] = [];
+  if (
+    boxInSphere(
+      partCframe,
+      partSize,
+      subtractionPart.Position as unknown as vector,
+      subtractionPart.Size.X / 2
+    )
+  ) {
+    let nodesToCheck = partTree.divide8(1, 1);
+    while (nodesToCheck.size() > 0) {
+      for (let i = nodesToCheck.size(); i > 0; i = i - 1) {
+        const node = nodesToCheck[math.max(i - 1, 0)];
+        const [nodePosition, nodeSize] = partTree._getNodeOffsetAndSize(node);
+        const nodeCframe = partTree.cFrame.ToWorldSpace(
+          new CFrame(nodePosition as unknown as Vector3)
+        );
+        const nodeHit = boxInSphere(
+          nodeCframe,
+          nodeSize,
+          subtractionPart.Position as unknown as vector,
+          subtractionPart.Size.X / 2
+        );
+        const underLimit = getBinaryLength(node) / 3 <= divisionLimit;
+        if (nodeHit && underLimit) {
+          const newNodesToCheck = partTree.divide8(node, 1);
+          nodesToCheck.remove(math.max(i - 1, 0));
+          nodesToCheck = [...nodesToCheck, ...newNodesToCheck];
+          // hitNodes.push(node);
+        } else if (nodeHit) {
+          hitNodes.push(node);
+          nodesToCheck.remove(math.max(i - 1, 0));
+        } else {
+          freeNodes.push(node);
+          nodesToCheck.remove(math.max(i - 1, 0));
+        }
+
+        // print(getBinaryLength(node));
+
+        // if (nodeHit === true && underLimit === true) {
+        //   // nodesToCheck = [...nodesToCheck, ...partTree.divide8(node, 1)];
+        // } else if (nodeHit === false) {
+        //   freeNodes.push(node);
+        //   nodesToCheck.remove(i);
+        // } else if (underLimit === false) {
+        //   hitNodes.push(node);
+        //   nodesToCheck.remove(i);
+        // }
+      }
+    }
+  }
+
+  return [freeNodes, hitNodes, partTree] as [number[], number[], NodeTree];
+}
+
+cacheControl.increase = 2;
 map.Block3.Transparency = 1;
 const idk = 1;
+let displayParts = [] as unknown as Part[];
+let lastCframe = new CFrame();
+// let currentTree: NodeTree = undefined as unknown as NodeTree;
 while (idk === 1) {
   //
-  const [freeNodes, hitNodes, partTree] = demolish(map.Block3, destroyers.RedBall, 2);
-  for (const node of freeNodes) {
-    partTree.display('Block', node, 0.1);
+  const sameCFrame = destroyers.RedBall.CFrame.FuzzyEq(lastCframe);
+  if (sameCFrame === true) {
+    //
+  } else {
+    lastCframe = destroyers.RedBall.CFrame;
+    const [freeNodes, hitNodes, partTree] = demolishSphere(
+      map.Block3,
+      destroyers.RedBall,
+      3
+    );
+    //no nodes hit
+    for (const dPart of displayParts) {
+      partCache.return(dPart);
+      displayParts = [];
+    }
+    if (hitNodes.size() === 0) {
+      map.Block3.Transparency = 0;
+    } else {
+      map.Block3.Transparency = 1;
+      for (const node of freeNodes) {
+        displayParts = [...displayParts, ...partTree.display('Block', node, undefined)];
+      }
+    }
   }
-  task.wait(0.1);
+
+  task.wait(0.02);
 }
 
 // for (const node of hitNodes) {

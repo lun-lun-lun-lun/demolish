@@ -51,7 +51,7 @@ const templatePart = new Instance('Part');
   templatePart.Shape = Enum.PartType.Block;
 }
 
-const partCache = new AutoCache(templatePart, 1000, undefined);
+export const partCache = new AutoCache(templatePart, 1000, undefined);
 
 //functions
 function squareMagnitude(position: vector): number {
@@ -80,6 +80,7 @@ type item = Part | Model;
 
 //Used purely for the destruction aspect.
 export class NodeTree {
+  public itemCache = partCache;
   public cFrame: CFrame = EMPTY_CFRAME;
   public size: vector = EMPTY_VECTOR;
   public children: [[item]] = [[]] as unknown as [[item]];
@@ -169,6 +170,7 @@ export class NodeTree {
   // end
   display(shape: 'Block' | 'Ball', node?: number, time?: number) {
     const children = this.children;
+    let displayParts: Part[] = [];
     let startingNode = 1;
     if (node !== undefined) startingNode = node;
     // task.wait(2);
@@ -176,9 +178,10 @@ export class NodeTree {
     //if the node has children...
     if (children[startingNode * 8] !== undefined) {
       for (let i = 0; i <= 7; i++) {
-        this.display(shape, startingNode * 8 + i);
+        displayParts = [...displayParts, ...this.display(shape, startingNode * 8 + i)];
       }
     } else {
+      //display the part
       const nodePart = partCache.get() as Part;
       nodePart.Color = Color3.fromRGB(
         // math.random(1, 255),
@@ -205,7 +208,9 @@ export class NodeTree {
           partCache.return(nodePart);
         });
       }
+      displayParts.push(nodePart);
     }
+    return displayParts;
   }
 
   divide8(node: number, timesToDivide: number, divisions?: number) {

@@ -56,6 +56,7 @@ do
 		return self:constructor(...) or self
 	end
 	function NodeTree:constructor(cFrame, size, children, depth, maxDepth)
+		self.itemCache = partCache
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
 		self.children = { {} }
@@ -111,6 +112,7 @@ do
 	end
 	function NodeTree:display(shape, node, time)
 		local children = self.children
+		local displayParts = {}
 		local startingNode = 1
 		if node ~= nil then
 			startingNode = node
@@ -120,9 +122,17 @@ do
 		--if the node has children...
 		if children[startingNode * 8 + 1] ~= nil then
 			for i = 0, 7 do
-				self:display(shape, startingNode * 8 + i)
+				local _array = {}
+				local _length = #_array
+				local _displayPartsLength = #displayParts
+				table.move(displayParts, 1, _displayPartsLength, _length + 1, _array)
+				_length += _displayPartsLength
+				local _array_1 = self:display(shape, startingNode * 8 + i)
+				table.move(_array_1, 1, #_array_1, _length + 1, _array)
+				displayParts = _array
 			end
 		else
+			--display the part
 			local nodePart = partCache:get()
 			nodePart.Color = Color3.fromRGB(255, 255, 0)
 			local _binding = self:_getNodeOffsetAndSize(startingNode)
@@ -140,7 +150,9 @@ do
 					partCache["return"](partCache, nodePart)
 				end)
 			end
+			table.insert(displayParts, nodePart)
 		end
+		return displayParts
 	end
 	function NodeTree:divide8(node, timesToDivide, divisions)
 		-- const depth = this.depth;
@@ -184,5 +196,6 @@ end
 -- 	Vector3.new(1,1,1),   --7
 -- })
 return {
+	partCache = partCache,
 	NodeTree = NodeTree,
 }

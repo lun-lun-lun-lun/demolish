@@ -131,6 +131,7 @@ do
 			item.Color = template.Color
 			item.Shape = template.Shape
 			item.Size = template.Size
+			item.CFrame = self.hiddenCframe
 			self:_addItem(item)
 		elseif item:IsA("Model") and template:IsA("Model") then
 			--item.ScaleTo(template.GetScale());
