@@ -22,7 +22,7 @@ do
 	templatePart.CastShadow = false
 	templatePart.Shape = Enum.PartType.Block
 end
-local partCache = AutoCache.new(templatePart, 500, nil)
+local partCache = AutoCache.new(templatePart, 1000, nil)
 --functions
 local function squareMagnitude(position)
 	return position.x * position.x + position.y * position.y + position.z * position.z
@@ -57,7 +57,7 @@ do
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
 		self.children = { {} }
-		self.maxDepth = 5
+		self.maxDepth = 2
 		--const newVector: vector = newVector(x, y, z);
 		self.cFrame = cFrame
 		self.size = size
@@ -74,7 +74,8 @@ do
 			self.maxDepth = maxDepth
 		end
 	end
-	function NodeTree:_getNodePositionAndSize(node)
+	function NodeTree:_getNodeOffsetAndSize(node)
+		local position = self.cFrame.Position
 		--the length of the binary sequence for our node number
 		--we subtract one because the for loop will run at least once
 		--additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes, ie those in: 1 U [8,15] U [64,71] etc
@@ -94,56 +95,39 @@ do
 				if not (i <= binaryLength) then
 					break
 				end
-				--from the right, extract 3 bits from the binary sequence and convert it to an actual number
+				--from right to left, extract 3 bits from the binary sequence and convert it to an actual number
 				local octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1
-				local octreePosition = octreePositions[octreePositionIndex + 2]
+				local octreePosition = octreePositions[octreePositionIndex]
 				local stepAxes = { stepX * octreePosition.x, stepY * octreePosition.y, stepZ * octreePosition.z }
 				--we only need to make a vector of this at the end. for now, we use an array, since theyre slightly faster
 				newPosition = { newPosition[1] + stepAxes[1], newPosition[2] + stepAxes[2], newPosition[3] + stepAxes[3] }
+				-- i += 3;
+				stepX, stepY, stepZ = stepX / 2, stepY / 2, stepZ / 2
 			end
 		end
+		return { vector.create(newPosition[1], newPosition[2], newPosition[3]), vector.create(stepX * 4, stepY * 4, stepZ * 4) }
 	end
-	function NodeTree:display(shape, node, cframe, size)
-		local baseSize = self.size
-		local baseSizeX = baseSize.x
+	function NodeTree:display(shape, node)
 		local children = self.children
 		local startingNode = 1
 		if node ~= nil then
 			startingNode = node
 		end
-		local partCframe = self.cFrame
-		if cframe ~= nil then
-			partCframe = cframe
-		end
-		local position = partCframe.Position
+		-- task.wait(2);
+		-- print(children[startingNode * 8], startingNode, children);
 		if children[startingNode * 8 + 1] ~= nil then
 			local nodeRemainder = startingNode - (startingNode % 8)
 			for i = 0, 7 do
-				--we'll need to add additional handling for divide2 and divide4 later, this is a start
-				--if theres less than 8 siblings, stop and assume the parent node did divide2 or divide4
-				-- if (children[startingNode * 8 + i] === undefined) {
-				--   break;
-				-- }
-				-- const newPosition = newVector(position.X);
-				print(octreePositions[startingNode % 8 + 1])
-				local sizeDivider = math.pow(2, nodeRemainder / 8)
-				local baseAxisSize = baseSizeX / sizeDivider
-				-- if (startingNode !== 1) {
-				--   //startingnode is in [8, inf) (im ignoring the holes after 8 here.)
-				--   nodePart.Size = vector.create(
-				--     baseAxisSize,
-				--     baseAxisSize,
-				--     baseAxisSizeeeee
-				--   ) as unknown as Vector3;
-				-- } else {
-				--   nodePart.Size = this.size as unknown as Vector3;
-				-- }
-				self:display(shape, startingNode * 8 + i, cframe)
+				self:display(shape, startingNode * 8 + i)
 			end
 		else
 			local nodePart = partCache:get()
-			nodePart.Color = Color3.fromRGB(math.clamp(startingNode * 1.5, 1, 255), math.clamp(startingNode * 1, 1, 255), math.clamp(startingNode * 2, 1, 255))
-			nodePart.CFrame = partCframe
+			nodePart.Color = Color3.fromRGB(math.random(1, 255), math.random(1, 255), math.random(1, 255))
+			local _binding = self:_getNodeOffsetAndSize(startingNode)
+			local position = _binding[1]
+			local size = _binding[2]
+			nodePart.CFrame = self.cFrame:ToWorldSpace(CFrame.new(position))
+			nodePart.Size = size
 			--will optimize further later by calcing the new size in the previous function and sending it to the children
 			--alsoo need to do a less.. silly calc in general
 			nodePart.Parent = Workspace
@@ -162,17 +146,21 @@ do
 		-- end
 		-- const depth = this.depth;
 	end
-	function NodeTree:divide8(node)
+	function NodeTree:divide8(node, divisions)
 		-- const depth = this.depth;
 		-- const childNodes = this.childNodes;
 		local children = self.children
 		local shiftedNode = node * 8
+		if divisions == nil then
+			divisions = 1
+		end
+		print("isabv", node, divisions > self.maxDepth)
+		if divisions > self.maxDepth then
+			return nil
+		end
 		for i = 0, 7 do
 			children[shiftedNode + i] = {}
-			if shiftedNode + i - 1 > 16 then
-				return nil
-			end
-			self:divide8(shiftedNode + i - 1)
+			self:divide8(shiftedNode + i, divisions + 1)
 			-- this.subNodes[shiftedNode + i] = [];
 		end
 	end

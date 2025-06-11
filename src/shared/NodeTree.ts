@@ -48,7 +48,7 @@ const templatePart = new Instance('Part');
   templatePart.Shape = Enum.PartType.Block;
 }
 
-const partCache = new AutoCache(templatePart, 500, undefined);
+const partCache = new AutoCache(templatePart, 1000, undefined);
 
 //functions
 function squareMagnitude(position: vector): number {
@@ -82,7 +82,7 @@ export class NodeTree {
   public children: [[item]] = [[]] as unknown as [[item]];
   // public childNodes: [[NodeTree]] = [[]] as unknown as [[NodeTree]];
   // public depth: number = 0;
-  public maxDepth: number = 5;
+  public maxDepth: number = 2;
   constructor(
     cFrame: CFrame,
     size: vector,
@@ -112,7 +112,8 @@ export class NodeTree {
   //instead of having a getposition function, we can cache the global vector positions of each.
   //we dont need the whole cframe
   // _getPosition() {}
-  _getNodePositionAndSize(node: number) {
+  _getNodeOffsetAndSize(node: number) {
+    const position = this.cFrame.Position as unknown as vector;
     //the length of the binary sequence for our node number
     //we subtract one because the for loop will run at least once
     //additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes, ie those in: 1 U [8,15] U [64,71] etc
@@ -122,10 +123,11 @@ export class NodeTree {
     //traverse through the multiple of 3 by 3s
 
     for (let i = 1; i <= binaryLength; i += 3) {
-      //from the right, extract 3 bits from the binary sequence and convert it to an actual number
+      //from right to left, extract 3 bits from the binary sequence and convert it to an actual number
       const octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1;
-      const octreePosition = octreePositions[octreePositionIndex + 1];
+      const octreePosition = octreePositions[octreePositionIndex - 1];
       const stepAxes = [
+        //hi
         stepX * octreePosition.x,
         stepY * octreePosition.y,
         stepZ * octreePosition.z
@@ -136,10 +138,17 @@ export class NodeTree {
         newPosition[1] + stepAxes[1],
         newPosition[2] + stepAxes[2]
       ];
-      i += 3;
+      // i += 3;
       [stepX, stepY, stepZ] = [stepX / 2, stepY / 2, stepZ / 2];
     }
-    return vector.create();
+    return [
+      vector.create(
+        newPosition[0], //  + position.x
+        newPosition[1], //  + position.y
+        newPosition[2] //   + position.z
+      ),
+      vector.create(stepX * 4, stepY * 4, stepZ * 4)
+    ];
   }
   // 	local NumberLength = math.max(32-bit32.countlz(Node), 0) - 1
   // 	local Position = Vector3.zero
@@ -155,50 +164,30 @@ export class NodeTree {
 
   // 	return BinaryOctree.OffsetPosition + Position,HalfSize * 2
   // end
-  display(shape: 'Block' | 'Ball', node?: number, cframe?: CFrame, size?: vector) {
-    const baseSize = this.size;
-    const baseSizeX = baseSize.x;
+  display(shape: 'Block' | 'Ball', node?: number) {
     const children = this.children;
     let startingNode = 1;
     if (node !== undefined) startingNode = node;
-
-    let partCframe = this.cFrame;
-    if (cframe !== undefined) partCframe = cframe;
-    const position = partCframe.Position;
+    // task.wait(2);
+    // print(children[startingNode * 8], startingNode, children);
     if (children[startingNode * 8] !== undefined) {
       const nodeRemainder = startingNode - (startingNode % 8);
       for (let i = 0; i <= 7; i++) {
-        //we'll need to add additional handling for divide2 and divide4 later, this is a start
-        //if theres less than 8 siblings, stop and assume the parent node did divide2 or divide4
-        // if (children[startingNode * 8 + i] === undefined) {
-        //   break;
-        // }
-
-        // const newPosition = newVector(position.X);
-
-        print(octreePositions[startingNode % 8]); //hhhh
-        const sizeDivider = math.pow(2, nodeRemainder / 8);
-        const baseAxisSize = baseSizeX / sizeDivider;
-        // if (startingNode !== 1) {
-        //   //startingnode is in [8, inf) (im ignoring the holes after 8 here.)
-        //   nodePart.Size = vector.create(
-        //     baseAxisSize,
-        //     baseAxisSize,
-        //     baseAxisSizeeeee
-        //   ) as unknown as Vector3;
-        // } else {
-        //   nodePart.Size = this.size as unknown as Vector3;
-        // }
-        this.display(shape, startingNode * 8 + i, cframe);
+        this.display(shape, startingNode * 8 + i);
       }
     } else {
       const nodePart = partCache.get() as Part;
       nodePart.Color = Color3.fromRGB(
-        math.clamp(startingNode * 1.5, 1, 255),
-        math.clamp(startingNode * 1, 1, 255),
-        math.clamp(startingNode * 2, 1, 255)
+        math.random(1, 255),
+        math.random(1, 255),
+        math.random(1, 255)
       );
-      nodePart.CFrame = partCframe;
+      const [position, size] = this._getNodeOffsetAndSize(startingNode);
+
+      nodePart.CFrame = this.cFrame.ToWorldSpace(
+        new CFrame(position as unknown as Vector3)
+      );
+      nodePart.Size = size as unknown as Vector3;
       //will optimize further later by calcing the new size in the previous function and sending it to the children
       //alsoo need to do a less.. silly calc in general
 
@@ -226,15 +215,17 @@ export class NodeTree {
     // const depth = this.depth;
   }
 
-  divide8(node: number) {
+  divide8(node: number, divisions?: number) {
     // const depth = this.depth;
     // const childNodes = this.childNodes;
     const children = this.children;
     const shiftedNode = node * 8; //children are at
+    if (divisions === undefined) divisions = 1;
+    print('isabv', node, divisions > this.maxDepth);
+    if (divisions > this.maxDepth) return;
     for (let i = 0; i <= 7; i++) {
       children[shiftedNode + i - 1] = [] as unknown as [item];
-      if (shiftedNode + i - 1 > 16) return;
-      this.divide8(shiftedNode + i - 1);
+      this.divide8(shiftedNode + i, divisions + 1);
       // this.subNodes[shiftedNode + i] = [];
     }
   }
