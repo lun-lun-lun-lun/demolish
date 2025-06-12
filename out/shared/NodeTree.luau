@@ -4,6 +4,11 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").AutoCache
+TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck")
+-- import { pointInBox } from './CollisionCheck';
+-- import { box } from './CollisionCheck';
+-- import { sphereInSphere } from './CollisionCheck';
+-- import { boxInBox } from './CollisionCheck';
 --shortened func defs
 local newVector = vector.create
 local dotProduct = vector.dot

@@ -3,10 +3,11 @@
 
 import { Workspace } from '@rbxts/services';
 import { AutoCache } from 'shared/AutoCache';
-import { pointInBox } from './CollisionCheck';
-import { boxInSphere } from './CollisionCheck';
-import { sphereInSphere } from './CollisionCheck';
-import { boxInBox } from './CollisionCheck';
+import './CollisionCheck';
+// import { pointInBox } from './CollisionCheck';
+// import { box } from './CollisionCheck';
+// import { sphereInSphere } from './CollisionCheck';
+// import { boxInBox } from './CollisionCheck';
 
 //shortened func defs
 const newVector = vector.create;
@@ -161,8 +162,12 @@ export class NodeTree {
       nodePart.Size = size as unknown as Vector3;
       //will optimize further later by calcing the new size in the previous function and sending it to the children
       //alsoo need to do a less.. silly calc in general
+<<<<<<< Updated upstream
 
       nodePart.Shape = Enum.PartType['Block'];
+=======
+      nodePart.Shape = Enum.PartType[shape];
+>>>>>>> Stashed changes
       nodePart.Parent = Workspace;
       nodePart.CFrame = this.cFrame.ToWorldSpace(
         new CFrame(position as unknown as Vector3)

@@ -7,17 +7,18 @@ import { RunService } from '@rbxts/services';
 
 import { makeHello } from 'shared/module';
 
-import LunOctree from 'shared/LunOctree';
-import { SpheretreeNode } from 'shared/LunOctree';
+// import LunOctree from 'shared/LunOctree';
+// import { SpheretreeNode } from 'shared/LunOctree';
 import { NodeTree } from 'shared/NodeTree';
 
 import { partCache } from 'shared/NodeTree';
-import { pointInBox } from 'shared/CollisionCheck';
-import { boxInSphere } from 'shared/CollisionCheck';
-import { sphereInSphere } from 'shared/CollisionCheck';
+// import { pointInBox } from 'CollisionCheck';
 import { boxInBox } from 'shared/CollisionCheck';
-
+import { sphereInSphere } from 'shared/CollisionCheck';
+import { boxInSphere } from 'shared/CollisionCheck';
+// CollisionCheck.
 import cacheControl from 'shared/AutoCache';
+// import { CollisionCheck } from 'CollisionCheck';
 
 interface MapChildren {
   Block1: Part;
@@ -179,10 +180,10 @@ RunService.Heartbeat.Connect(function () {
   const sameCFrame = destroyers.RedBall.CFrame.FuzzyEq(lastCframe);
   if (sameCFrame === false) {
     lastCframe = destroyers.RedBall.CFrame;
-    const [freeNodes, hitNodes, partTree] = demolishSphere(
+    const [freeNodes, hitNodes, partTree] = demolishBox(
       map.Block3,
       destroyers.RedBall,
-      3
+      2
     );
     //no nodes hit
     for (const dPart of displayParts) {

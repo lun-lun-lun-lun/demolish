@@ -3,12 +3,20 @@
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
+<<<<<<< Updated upstream
 local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
+=======
+-- import LunOctree from 'shared/LunOctree';
+-- import { SpheretreeNode } from 'shared/LunOctree';
+>>>>>>> Stashed changes
 local NodeTree = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "NodeTree").NodeTree
 local partCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "NodeTree").partCache
-local boxInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInSphere
+-- import { pointInBox } from 'CollisionCheck';
 local boxInBox = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInBox
+local boxInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInSphere
+-- CollisionCheck.
 local cacheControl = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").default
+-- import { CollisionCheck } from 'CollisionCheck';
 local BOX_SPHERE_CONSTANT = math.sqrt(3) / 2
 local WORLD_CENTER = vector.create(0, 20, 0)
 local SPHERETREE_RADIUS = 100 * BOX_SPHERE_CONSTANT
@@ -174,7 +182,7 @@ RunService.Heartbeat:Connect(function()
 	local sameCFrame = destroyers.RedBall.CFrame:FuzzyEq(lastCframe)
 	if sameCFrame == false then
 		lastCframe = destroyers.RedBall.CFrame
-		local _binding = demolishSphere(map.Block3, destroyers.RedBall, 3)
+		local _binding = demolishBox(map.Block3, destroyers.RedBall, 3)
 		local freeNodes = _binding[1]
 		local hitNodes = _binding[2]
 		local partTree = _binding[3]
