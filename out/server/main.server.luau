@@ -3,6 +3,7 @@
 -- Compiled with roblox-ts v3.0.0
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
+local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
 local NodeTree = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "NodeTree").NodeTree
 local partCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "NodeTree").partCache
 local boxInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").boxInSphere
@@ -165,16 +166,13 @@ local function demolishSphere(part, subtractionPart, divisionLimit)
 end
 cacheControl.increase = 2
 map.Block3.Transparency = 1
-local idk = 1
 local displayParts = {}
 local lastCframe = CFrame.new()
 -- let currentTree: NodeTree = undefined as unknown as NodeTree;
-while idk == 1 do
+RunService.Heartbeat:Connect(function()
 	--
 	local sameCFrame = destroyers.RedBall.CFrame:FuzzyEq(lastCframe)
-	if sameCFrame == true then
-		--
-	else
+	if sameCFrame == false then
 		lastCframe = destroyers.RedBall.CFrame
 		local _binding = demolishSphere(map.Block3, destroyers.RedBall, 3)
 		local freeNodes = _binding[1]
@@ -195,14 +193,13 @@ while idk == 1 do
 				local _displayPartsLength = #displayParts
 				table.move(displayParts, 1, _displayPartsLength, _length + 1, _array)
 				_length += _displayPartsLength
-				local _array_1 = partTree:display("Block", node, nil)
+				local _array_1 = partTree:display("Block", map.Block3.Color, node, nil)
 				table.move(_array_1, 1, #_array_1, _length + 1, _array)
 				displayParts = _array
 			end
 		end
 	end
-	task.wait()
-end
+end)
 -- for (const node of hitNodes) {
 --   partTree.display('Block', node);
 -- }

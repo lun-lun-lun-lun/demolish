@@ -170,16 +170,14 @@ function demolishSphere(part: Part, subtractionPart: Part, divisionLimit?: numbe
 
 cacheControl.increase = 2;
 map.Block3.Transparency = 1;
-const idk = 1;
 let displayParts = [] as unknown as Part[];
 let lastCframe = new CFrame();
 // let currentTree: NodeTree = undefined as unknown as NodeTree;
-while (idk === 1) {
+
+RunService.Heartbeat.Connect(function () {
   //
   const sameCFrame = destroyers.RedBall.CFrame.FuzzyEq(lastCframe);
-  if (sameCFrame === true) {
-    //
-  } else {
+  if (sameCFrame === false) {
     lastCframe = destroyers.RedBall.CFrame;
     const [freeNodes, hitNodes, partTree] = demolishSphere(
       map.Block3,
@@ -196,14 +194,14 @@ while (idk === 1) {
     } else {
       map.Block3.Transparency = 1;
       for (const node of freeNodes) {
-        displayParts = [...displayParts, ...partTree.display('Block', node, undefined)];
+        displayParts = [
+          ...displayParts,
+          ...partTree.display('Block', map.Block3.Color, node, undefined)
+        ];
       }
     }
   }
-
-  task.wait();
-}
-
+});
 // for (const node of hitNodes) {
 //   partTree.display('Block', node);
 // }

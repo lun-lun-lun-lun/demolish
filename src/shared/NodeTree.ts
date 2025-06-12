@@ -76,6 +76,10 @@ function squareMagnitude(position: vector): number {
 // 	return BinaryOctree.OffsetPosition + Position,HalfSize * 2
 // end
 
+function displayTree(shape: Enum.PartType, tree: NodeTree | SphereTree) {
+  //
+}
+
 type item = Part | Model;
 
 //Used purely for the destruction aspect.
@@ -86,15 +90,7 @@ export class NodeTree {
   public children: [[item]] = [[]] as unknown as [[item]];
   // public childNodes: [[NodeTree]] = [[]] as unknown as [[NodeTree]];
   // public depth: number = 0;
-  public maxDepth: number = 2;
-  constructor(
-    cFrame: CFrame,
-    size: vector,
-    children?: [[item]],
-    // childNodes?: [[NodeTree]],
-    depth?: number,
-    maxDepth?: number
-  ) {
+  constructor(cFrame: CFrame, size: vector, children?: [[item]], maxDepth?: number) {
     //const newVector: vector = newVector(x, y, z);
 
     this.cFrame = cFrame; //need cframes so I can use ToWorldSpace and position stuff sensibly.
@@ -108,14 +104,7 @@ export class NodeTree {
     // if (depth !== undefined) {
     //   this.depth = depth;
     // }
-    if (maxDepth !== undefined) {
-      this.maxDepth = maxDepth;
-    }
   }
-
-  //instead of having a getposition function, we can cache the global vector positions of each.
-  //we dont need the whole cframe
-  // _getPosition() {}
   _getNodeOffsetAndSize(node: number) {
     const position = this.cFrame.Position as unknown as vector;
     //the length of the binary sequence for our node number
@@ -131,7 +120,6 @@ export class NodeTree {
       const octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1;
       const octreePosition = octreePositions[octreePositionIndex - 1];
       const stepAxes = [
-        //hi
         stepX * octreePosition.x,
         stepY * octreePosition.y,
         stepZ * octreePosition.z
@@ -154,50 +142,27 @@ export class NodeTree {
       vector.create(stepX * 4, stepY * 4, stepZ * 4)
     ];
   }
-  // 	local NumberLength = math.max(32-bit32.countlz(Node), 0) - 1
-  // 	local Position = Vector3.zero
-
-  // 	for Index = 1,NumberLength,3 do
-  // 		local Suffix = bit32.extract(Node,NumberLength - Index - 2,3)
-
-  // 		Position = Position + (HalfSize * SuffixToOrder[Suffix + 1])
-
-  // 		Index += 3
-  // 		HalfSize = HalfSize / 2
-  // 	end
-
-  // 	return BinaryOctree.OffsetPosition + Position,HalfSize * 2
-  // end
-  display(shape: 'Block' | 'Ball', node?: number, time?: number) {
+  display(color: Color3, node?: number, time?: number) {
     const children = this.children;
     let displayParts: Part[] = [];
     let startingNode = 1;
     if (node !== undefined) startingNode = node;
-    // task.wait(2);
-    // print(children[startingNode * 8], startingNode, children);
     //if the node has children...
     if (children[startingNode * 8] !== undefined) {
       for (let i = 0; i <= 7; i++) {
-        displayParts = [...displayParts, ...this.display(shape, startingNode * 8 + i)];
+        displayParts = [...displayParts, ...this.display(color, startingNode * 8 + i)];
       }
     } else {
       //display the part
       const nodePart = partCache.get() as Part;
-      nodePart.Color = Color3.fromRGB(
-        // math.random(1, 255),
-        // math.random(1, 255),
-        // math.random(1, 255)
-        255,
-        255,
-        0
-      );
+      nodePart.Color = Color3.fromRGB(255, 255, 0);
       const [position, size] = this._getNodeOffsetAndSize(startingNode);
 
       nodePart.Size = size as unknown as Vector3;
       //will optimize further later by calcing the new size in the previous function and sending it to the children
       //alsoo need to do a less.. silly calc in general
 
-      nodePart.Shape = Enum.PartType[shape];
+      nodePart.Shape = Enum.PartType['Block'];
       nodePart.Parent = Workspace;
       nodePart.CFrame = this.cFrame.ToWorldSpace(
         new CFrame(position as unknown as Vector3)
@@ -236,6 +201,28 @@ export class NodeTree {
     return newNodes;
   }
 }
+
+export class SphereTree extends NodeTree {
+  public position: vector = EMPTY_VECTOR;
+  public radius: number = 5;
+  public maxDepth: number = 4;
+  constructor(position: vector, radius: number, children?: [[item]], maxDepth?: number) {
+    super(
+      //maybe i should just create a new class so I can avoid doing this silly stuff
+      undefined as unknown as CFrame,
+      undefined as unknown as vector
+    );
+    this.position = position;
+    this.radius = radius;
+    if (children !== undefined) this.children = children;
+    if (maxDepth !== undefined) this.maxDepth = maxDepth;
+  }
+  display(color: Color3, node?: number, time?: number) {
+    super.display('Ball', color, node, time);
+  }
+}
+
+//will probably make a DemoTree class later that is built specifically with al the functions to destroy parts
 
 //const SubdivideThreshold = 1 //replacing with a per-octree solution
 

@@ -55,12 +55,17 @@ do
 		local self = setmetatable({}, NodeTree)
 		return self:constructor(...) or self
 	end
-	function NodeTree:constructor(cFrame, size, children, depth, maxDepth)
+	function NodeTree:constructor(cFrame, size, children, maxDepth)
+		-- if (childNodes !== undefined) {
+		--   this.childNodes = childNodes;
+		-- }
+		-- if (depth !== undefined) {
+		--   this.depth = depth;
+		-- }
 		self.itemCache = partCache
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
 		self.children = { {} }
-		self.maxDepth = 2
 		--const newVector: vector = newVector(x, y, z);
 		self.cFrame = cFrame
 		self.size = size
@@ -73,9 +78,6 @@ do
 		-- if (depth !== undefined) {
 		--   this.depth = depth;
 		-- }
-		if maxDepth ~= nil then
-			self.maxDepth = maxDepth
-		end
 	end
 	function NodeTree:_getNodeOffsetAndSize(node)
 		local position = self.cFrame.Position
@@ -110,15 +112,13 @@ do
 		end
 		return { vector.create(newPosition[1], newPosition[2], newPosition[3]), vector.create(stepX * 4, stepY * 4, stepZ * 4) }
 	end
-	function NodeTree:display(shape, node, time)
+	function NodeTree:display(shape, color, node, time)
 		local children = self.children
 		local displayParts = {}
 		local startingNode = 1
 		if node ~= nil then
 			startingNode = node
 		end
-		-- task.wait(2);
-		-- print(children[startingNode * 8], startingNode, children);
 		--if the node has children...
 		if children[startingNode * 8 + 1] ~= nil then
 			for i = 0, 7 do
@@ -127,7 +127,7 @@ do
 				local _displayPartsLength = #displayParts
 				table.move(displayParts, 1, _displayPartsLength, _length + 1, _array)
 				_length += _displayPartsLength
-				local _array_1 = self:display(shape, startingNode * 8 + i)
+				local _array_1 = self:display(shape, color, startingNode * 8 + i)
 				table.move(_array_1, 1, #_array_1, _length + 1, _array)
 				displayParts = _array
 			end
@@ -184,6 +184,36 @@ do
 		return newNodes
 	end
 end
+local SphereTree
+do
+	local super = NodeTree
+	SphereTree = setmetatable({}, {
+		__tostring = function()
+			return "SphereTree"
+		end,
+		__index = super,
+	})
+	SphereTree.__index = SphereTree
+	function SphereTree.new(...)
+		local self = setmetatable({}, SphereTree)
+		return self:constructor(...) or self
+	end
+	function SphereTree:constructor(position, radius, children, maxDepth)
+		super.constructor(self, nil, nil)
+		self.position = EMPTY_VECTOR
+		self.radius = 5
+		self.maxDepth = 4
+		self.position = position
+		self.radius = radius
+		if children ~= nil then
+			self.children = children
+		end
+		if maxDepth ~= nil then
+			self.maxDepth = maxDepth
+		end
+	end
+end
+--will probably make a DemoTree class later that is built specifically with al the functions to destroy parts
 --const SubdivideThreshold = 1 //replacing with a per-octree solution
 -- const SuffixToOrder = table.freeze({
 -- 	newVector(-1,-1,-1),
@@ -198,4 +228,5 @@ end
 return {
 	partCache = partCache,
 	NodeTree = NodeTree,
+	SphereTree = SphereTree,
 }
