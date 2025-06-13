@@ -14,3 +14,4 @@ Open DemoPlace.rbxl and run it to test out the demo. Instructions for beta teste
 - In broad phase, approximate OBBs into a bounding sphere (or cylinder when needed)  (DONE)
 - Disable physics and or collisions on 'irrelevant' (unobserved/far away, and small) seperated parts  (DONE)
 - Part pooling  (DONE)
+- Detect which parts are fully encompassed by destructors, and dont run calcs for them, just hide them (NEXT)
