@@ -1,5 +1,6 @@
 # destruction-physics  
 (hopefully optimized) voxel destruction physics for roblox, written in typescript  
+I'll keep working on this after the due date.
     
 Open DemoPlace.rbxl and run it to test out the demo. Instructions for beta testers are in the readme script.
 
