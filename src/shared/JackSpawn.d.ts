@@ -1,40 +1,41 @@
-// From the jackdotink
-// Type definitions for JackSpawn.luau
+// From jackdotink
 
 type Task<T extends unknown[] = unknown[]> = thread | ((...args: T) => unknown);
 
 interface JackSpawn {
   /**
-   * Yields the current thread for the given time (in seconds).
-   * Returns the elapsed time.
+   * yields current thread for the given time
+   * Returns elapsed time
    */
   wait(time: number): number;
 
   /**
-   * Schedules a task or thread to run after a delay (in seconds).
-   * Returns the thread.
+   * schedules a task or thread to run after a time delay
+   * Returns the thread
    */
   delay<T extends unknown[]>(time: number, task: Task<T>, ...args: T): thread;
 
   /**
-   * Schedules a task or thread to run as soon as possible, after the current cycle.
+   * schedules a task or thread to run as soon as possible (after current cycle)
    * Returns the thread.
    */
   defer<T extends unknown[]>(task: Task<T>, ...args: T): thread;
 
   /**
-   * Immediately resumes a task or thread with the given arguments.
-   * Returns the thread.
+   * resumes a task/thread with given arguments
+   * Returns the thread
    */
   spawn<T extends unknown[]>(task: Task<T>, ...args: T): thread;
 
   /**
-   * Closes the given thread.
+   * closes thread
+   * Returns nothing
    */
   close(thread: thread): void;
 
   /**
-   * Starts the JackSpawn scheduler loop (never returns).
+   * starts JackSpawn scheduler loop
+   * Returns nothing
    */
   start(): never;
 }

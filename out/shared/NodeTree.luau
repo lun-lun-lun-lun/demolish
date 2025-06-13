@@ -4,11 +4,6 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local AutoCache = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "AutoCache").AutoCache
-TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck")
--- import { pointInBox } from './CollisionCheck';
--- import { box } from './CollisionCheck';
--- import { sphereInSphere } from './CollisionCheck';
--- import { boxInBox } from './CollisionCheck';
 local sphereInSphere = TS.import(script, game:GetService("ReplicatedStorage"), "TS", "CollisionCheck").sphereInSphere
 --shortened func defs
 local newVector = vector.create
@@ -35,20 +30,18 @@ local partCache = AutoCache.new(templatePart, 1000, nil)
 local function squareMagnitude(position)
 	return position.x * position.x + position.y * position.y + position.z * position.z
 end
+--return the bounding sphere of a model or basepart
 local function getBoundingSphere(item)
 	local radius
 	if item:IsA("BasePart") then
 		radius = item.Size.Magnitude / 2
 	else
-		-- const model = item as Model;
+		--const model = item as Model;
 		radius = item:GetExtentsSize().Magnitude / 2
 	end
 	return radius
 end
-local function displayTree(shape, tree)
-	--
-end
---Used purely for the destruction aspect.
+--NodeTree is more bare bones and used purely for the destruction aspect
 local NodeTree
 do
 	NodeTree = setmetatable({}, {
@@ -61,35 +54,22 @@ do
 		local self = setmetatable({}, NodeTree)
 		return self:constructor(...) or self
 	end
-	function NodeTree:constructor(cFrame, size, children, maxDepth)
-		-- if (childNodes !== undefined) {
-		--   this.childNodes = childNodes;
-		-- }
-		-- if (depth !== undefined) {
-		--   this.depth = depth;
-		-- }
+	function NodeTree:constructor(cFrame, size, children)
 		self.itemCache = partCache
 		self.cFrame = EMPTY_CFRAME
 		self.size = EMPTY_VECTOR
 		self.children = { {} }
-		--const newVector: vector = newVector(x, y, z);
 		self.cFrame = cFrame
 		self.size = size
 		if children ~= nil then
 			self.children = children
 		end
-		-- if (childNodes !== undefined) {
-		--   this.childNodes = childNodes;
-		-- }
-		-- if (depth !== undefined) {
-		--   this.depth = depth;
-		-- }
 	end
 	function NodeTree:_getNodeOffsetAndSize(node)
 		local position = self.cFrame.Position
 		--the length of the binary sequence for our node number
 		--we subtract one because the for loop will run at least once
-		--additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes, ie those in: 1 U [8,15] U [64,71] etc
+		--additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes like: 1 U [8,15] U [64,71] etc
 		local binaryLength = math.max(32 - bit32.countlz(node), 0) - 1
 		local stepX, stepY, stepZ = self.size.x / 4, self.size.y / 4, self.size.z / 4
 		local newPosition = { 0, 0, 0 }
@@ -110,13 +90,14 @@ do
 				local octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1
 				local octreePosition = octreePositions[octreePositionIndex]
 				local stepAxes = { stepX * octreePosition.x, stepY * octreePosition.y, stepZ * octreePosition.z }
-				--we only need to make a vector of this at the end. for now, we use an array, since theyre slightly faster
+				--we only need to make a vector of this at the end. for now, we use an array, since theyre faster
+				--update position. we treat 0 as x, 1 as y, and 2 as z
 				newPosition = { newPosition[1] + stepAxes[1], newPosition[2] + stepAxes[2], newPosition[3] + stepAxes[3] }
-				-- i += 3;
+				--i += 3;
 				stepX, stepY, stepZ = stepX / 2, stepY / 2, stepZ / 2
 			end
 		end
-		return { vector.create(newPosition[1], newPosition[2], newPosition[3]), vector.create(stepX * 4, stepY * 4, stepZ * 4) }
+		return { newVector(newPosition[1], newPosition[2], newPosition[3]), newVector(stepX * 4, stepY * 4, stepZ * 4) }
 	end
 	function NodeTree:display(shape, color, node, time)
 		local children = self.children
@@ -140,16 +121,14 @@ do
 		else
 			--display the part
 			local nodePart = partCache:get()
-			nodePart.Color = Color3.fromRGB(255, 255, 0)
+			nodePart.Color = color
 			local _binding = self:_getNodeOffsetAndSize(startingNode)
-			local position = _binding[1]
+			local offset = _binding[1]
 			local size = _binding[2]
 			nodePart.Size = size
-			--will optimize further later by calcing the new size in the previous function and sending it to the children
-			--alsoo need to do a less.. silly calc in general
 			nodePart.Shape = shape
 			nodePart.Parent = Workspace
-			nodePart.CFrame = self.cFrame:ToWorldSpace(CFrame.new(position))
+			nodePart.CFrame = self.cFrame:ToWorldSpace(CFrame.new(offset))
 			if time ~= nil then
 				task.spawn(function()
 					task.wait(time)
@@ -161,8 +140,6 @@ do
 		return displayParts
 	end
 	function NodeTree:divide8(node, timesToDivide, divisions)
-		-- const depth = this.depth;
-		-- const childNodes = this.childNodes;
 		if divisions == nil then
 			divisions = 0
 		end
@@ -185,8 +162,6 @@ do
 			_length += _newNodesLength
 			table.move(additions, 1, #additions, _length + 1, _array)
 			newNodes = _array
-			-- task.wait();
-			-- this.subNodes[shiftedNode + i] = [];
 		end
 		return newNodes
 	end
@@ -245,17 +220,16 @@ do
 		else
 			--display the part
 			local nodePart = partCache:get()
-			nodePart.Color = Color3.fromRGB(26, 0, 255)
+			nodePart.Color = color
 			local _binding = self:_getNodeOffsetAndRadius(startingNode)
 			local offset = _binding[1]
 			local radius = _binding[2]
-			nodePart.Size = vector.create(radius, radius, radius)
-			--will optimize further later by calcing the new size in the previous function and sending it to the children
-			--alsoo need to do a less.. silly calc in general
+			nodePart.Size = newVector(radius, radius, radius)
 			nodePart.Shape = Enum.PartType.Ball
 			nodePart.Parent = Workspace
-			nodePart.Transparency = 0.8
-			nodePart.Position = vector.create(self.position.x + offset.x, self.position.y + offset.y, self.position.z + offset.z)
+			nodePart.Locked = true
+			nodePart.Transparency = 0.9
+			nodePart.Position = newVector(self.position.x + offset.x, self.position.y + offset.y, self.position.z + offset.z)
 			if time ~= nil then
 				task.spawn(function()
 					task.wait(time)
@@ -269,8 +243,6 @@ do
 	function SphereTree:_reassignItems(node, nodePosition)
 		--
 		local children = self.children
-		local maxDepth = self.maxDepth
-		local maxItems = self.maxItems
 		self:divide8(node, 1)
 		local nodeArray = children[node]
 		local nodeChildrenIndex = node * 8
@@ -287,6 +259,7 @@ do
 			if itemPosition.Z > nodePosition[3] then
 				nodePositionIndex += 1
 			end
+			--assign item to correct child node
 			local _exp = children[nodeChildrenIndex + nodePositionIndex]
 			table.insert(_exp, item)
 		end
@@ -305,13 +278,19 @@ do
 		local nodePosition = { position.x, position.y, position.z }
 		local nodePositionX, nodePositionY, nodePositionZ = nodePosition[1], nodePosition[2], nodePosition[3]
 		while part do
+			--where the binary stuff in the octreePositions table comes in
+			--can figure out where to put the part much faster by doing this
+			--choose (local) node index based on position, made easy by the binary sequeunce ordering
 			local nodePositionIndex = 0
+			--x00
 			if partPositionX > nodePositionX then
 				nodePositionIndex += 4
 			end
+			--0x0
 			if partPositionY > nodePositionY then
 				nodePositionIndex += 2
 			end
+			--00x
 			if partPositionZ > nodePositionZ then
 				nodePositionIndex += 1
 			end
@@ -400,14 +379,14 @@ do
 				local stepAxes = { step * octreePosition.x, step * octreePosition.y, step * octreePosition.z }
 				--we only need to make a vector of this at the end. for now, we use an array, since theyre slightly faster
 				newPosition = { newPosition[1] + stepAxes[1], newPosition[2] + stepAxes[2], newPosition[3] + stepAxes[3] }
-				-- i += 3;
+				--i += 3;
 				step /= 2
 			end
 		end
-		return { vector.create(newPosition[1], newPosition[2], newPosition[3]), step * 4 * BOX_SPHERE_CONSTANT }
+		return { newVector(newPosition[1], newPosition[2], newPosition[3]), step * 4 * BOX_SPHERE_CONSTANT }
 	end
 	function SphereTree:query(queryPosition, queryRadius)
-		queryRadius *= queryRadius
+		-- queryRadius *= queryRadius;
 		local children = self.children
 		local position = self.position
 		local positionX, positionY, positionZ = position.x, position.y, position.z
@@ -424,13 +403,13 @@ do
 			local _binding = self:_getNodeOffsetAndRadius(node)
 			local nodeOffset = _binding[1]
 			local nodeRadius = _binding[2]
-			local nodePosition = vector.create(positionX + nodeOffset.x, positionY + nodeOffset.y, positionZ + nodeOffset.z)
-			--if approximated spheres not touching, then continue
+			local nodePosition = newVector(positionX + nodeOffset.x, positionY + nodeOffset.y, positionZ + nodeOffset.z)
+			--if approximated spheres not touching, continue
 			if not sphereInSphere(nodePosition, nodeRadius, queryPosition, queryRadius) then
 				continue
 			end
 			local childPosition = node * 8
-			--justr image its 'octreepositionindex' instead of posIndex here. Way too long and im not writing allat
+			--justr imagine its 'octreepositionindex' instead of posIndex here. Way too long and im not writing allat
 			for posIndex = 0, 7 do
 				local nextNode = childPosition + posIndex
 				if children[nextNode] == nil then
@@ -450,7 +429,6 @@ do
 		return detectedItems
 	end
 end
---will probably make a DemoTree class later that is built specifically with al the functions to destroy parts
 return {
 	partCache = partCache,
 	NodeTree = NodeTree,

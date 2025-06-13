@@ -1,11 +1,8 @@
 // From AxisAngle
 
-/**
- * CollisionCheck module type definitions for Roblox-TS
- */
 declare namespace CollisionCheck {
   /**
-   * Checks if two cylinders intersect.
+   * check if two cylinders touch
    * @param position0 Center of first cylinder
    * @param height0 Height of first cylinder
    * @param radius0 Radius of first cylinder
@@ -23,7 +20,7 @@ declare namespace CollisionCheck {
   ): boolean;
 
   /**
-   * Checks if a box and a sphere intersect.
+   * check if box and sphere touch
    * @param cframe0 CFrame of the box
    * @param size0 Size of the box
    * @param position1 Center of the sphere
@@ -37,7 +34,7 @@ declare namespace CollisionCheck {
   ): boolean;
 
   /**
-   * Checks if two spheres intersect.
+   * check if spheres touch
    * @param position0 Center of first sphere
    * @param radius0 Radius of first sphere
    * @param position1 Center of second sphere
@@ -51,7 +48,7 @@ declare namespace CollisionCheck {
   ): boolean;
 
   /**
-   * Checks if two boxes intersect.
+   * check if OBBs touch
    * @param cframe0 CFrame of first box
    * @param size0 Size of first box
    * @param cframe1 CFrame of second box

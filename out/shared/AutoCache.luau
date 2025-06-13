@@ -4,14 +4,20 @@
 local TS = require(game:GetService("ReplicatedStorage"):WaitForChild("rbxts_include"):WaitForChild("RuntimeLib"))
 local Workspace = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").Workspace
 local RunService = TS.import(script, game:GetService("ReplicatedStorage"), "rbxts_include", "node_modules", "@rbxts", "services").RunService
+--define a type that can be either a part or a model
+--constant representing a far away position
 local FAR = 5000
---autocache sometimes bugs out when I put my parts really really far away
-local DEFAULT_CACHE_POSITION = CFrame.new(FAR, math.abs(FAR), FAR)
-local MAX_CACHED_INSTANCES = 9000
+--the default location where cached objects are hidden
+local DEFAULT_CACHE_POSITION = CFrame.new(FAR, FAR, FAR)
+--maximum number of instances allowed in the cache
+local MAX_CACHED_INSTANCES = 9999
+--stores all autocache instances in the game
 local allCaches = {}
+--the rate at which the cache gets another part until it reaches its maximum
 local rates = {
 	increase = 1,
 }
+--an automatically increasing cache of parts or models
 local AutoCache
 do
 	AutoCache = setmetatable({}, {
@@ -32,10 +38,11 @@ do
 		self.maximum = MAX_CACHED_INSTANCES
 		self.usedThisHeartbeat = false
 		self.template = template
-		--if you gave a position, we'll use it
+		--if a custom hiding position is given use it otherwise use the default
 		self.hiddenCframe = if position ~= nil then CFrame.new(position.x, position.y, position.z) else self.hiddenCframe
-		--make a table with the cframe repeated over and over for use with BulkMoveTo
+		--create a table with the same cframe for bulk moving instances
 		self.cframeTable = table.create(amount, self.hiddenCframe)
+		--add the initial number of instances to the cache
 		do
 			local i = 0
 			local _shouldIncrement = false
@@ -51,8 +58,9 @@ do
 				self:_addClone(template)
 			end
 		end
-		--becomes faster than manually moving each model after ~50 moves
+		--move all cached instances to the hidden position using bulkmoveto
 		Workspace:BulkMoveTo(self.cache, self.cframeTable, Enum.BulkMoveMode.FireCFrameChanged)
+		--add this cache instance to the list of all caches
 		local _self = self
 		table.insert(allCaches, _self)
 	end
@@ -61,12 +69,14 @@ do
 			item.Anchored = true
 			--item.CanCollide = false;
 		else
+			--anchor all parts inside a model
 			for _, subItem in item:GetDescendants() do
 				if subItem:IsA("Part") == true and subItem.Anchored == false then
 					subItem.Anchored = true
 				end
 			end
 		end
+		--move the item to the workspace and add it to the cache
 		item.Parent = Workspace
 		local _cache = self.cache
 		local _item = item
@@ -77,6 +87,7 @@ do
 		if item:IsA("Part") then
 			item.Anchored = true
 		else
+			--anchor all unanchored parts inside the model
 			for _, subItem in item:GetDescendants() do
 				if subItem:IsA("Part") == true and subItem.Anchored == false then
 					subItem.Anchored = true
@@ -114,19 +125,18 @@ do
 	AutoCache["return"] = function(self, item)
 		self.usedThisHeartbeat = true
 		local template = self.template
-		--fire destroy or something? it wasnt really destroyed though... not sure
-		--for now i'll ignore things like that since they are irrelevant to my usecase, mostly
+		--move the item back to the template's parent
 		item.Parent = template.Parent
-		--set miscellaneous attributes
+		--set attributes to match the template skipping uniqueid
 		for _k, _v in template:GetAttributes() do
 			local attribute = { _k, _v }
-			--need to skip GUID, they should be unique to each instance (will add GUIDs later btw)
 			local name, value = attribute[1], attribute[2]
 			if name == "UniqueId" then
 				continue
 			end
 			item:SetAttribute(name, value)
 		end
+		--if the item is a part, match physical properties and hide it
 		if item:IsA("Part") and template:IsA("Part") then
 			item.Color = template.Color
 			item.Shape = template.Shape
@@ -134,20 +144,22 @@ do
 			item.CFrame = self.hiddenCframe
 			self:_addItem(item)
 		elseif item:IsA("Model") and template:IsA("Model") then
-			--item.ScaleTo(template.GetScale());
-			--would theoretically have to handle getting back removed children too?
-			--sounds like too much work for a part of it im not really using
+			--if the item is a model, destroy it and replace with a new clone
+			--i didnt end up using models in the cache anyway so this horrendous idea never affected anything
 			item:Destroy()
 			self:_addClone(template)
 		end
 	end
 end
+--runs every heartbeat to check each cache every frame to see if we need to add a part or not
 RunService.Heartbeat:Connect(function(deltaTime)
 	for _, iCache in allCaches do
 		local cacheUsed = iCache.usedThisHeartbeat
 		if cacheUsed == true then
+			--reset check for use on this frame for next heartbeat
 			iCache.usedThisHeartbeat = false
 		elseif cacheUsed == false and #iCache.cache < iCache.maximum then
+			--if cache wasnt used and not full yet, add more instances
 			local increase = if #iCache.cache + rates.increase > iCache.maximum then iCache.maximum - #iCache.cache else rates.increase
 			do
 				local i = 0
@@ -164,7 +176,6 @@ RunService.Heartbeat:Connect(function(deltaTime)
 					iCache:_addItem(iCache.template:Clone())
 				end
 			end
-			--hi
 		end
 	end
 end)
