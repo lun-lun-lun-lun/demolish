@@ -1,3 +1,5 @@
+// From AxisAngle
+
 /**
  * CollisionCheck module type definitions for Roblox-TS
  */

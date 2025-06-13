@@ -9,6 +9,8 @@ import './CollisionCheck';
 // import { sphereInSphere } from './CollisionCheck';
 // import { boxInBox } from './CollisionCheck';
 
+import { sphereInSphere } from 'shared/CollisionCheck';
+
 //shortened func defs
 const newVector = vector.create;
 const dotProduct = vector.dot;
@@ -59,23 +61,16 @@ function squareMagnitude(position: vector): number {
   return position.x * position.x + position.y * position.y + position.z * position.z;
 }
 
-// function GetNodePositionAndSize(BinaryOctree : BinaryOctree,Node : number) : (Vector3,Vector3)
-// 	local NumberLength = math.max(32-bit32.countlz(Node), 0) - 1
-// 	local Position = Vector3.zero
-// 	local HalfSize = BinaryOctree.Size / 4
-// 	HalfSize = Vector3.new(HalfSize,HalfSize,HalfSize)
-
-// 	for Index = 1,NumberLength,3 do
-// 		local Suffix = bit32.extract(Node,NumberLength - Index - 2,3)
-
-// 		Position = Position + (HalfSize * SuffixToOrder[Suffix + 1])
-
-// 		Index += 3
-// 		HalfSize = HalfSize / 2
-// 	end
-
-// 	return BinaryOctree.OffsetPosition + Position,HalfSize * 2
-// end
+function getBoundingSphere(item: BasePart | Model) {
+  let radius;
+  if (item.IsA('BasePart')) {
+    radius = item.Size.Magnitude / 2;
+  } else {
+    // const model = item as Model;
+    radius = item.GetExtentsSize().Magnitude / 2;
+  }
+  return radius;
+}
 
 function displayTree(shape: Enum.PartType, tree: NodeTree | SphereTree) {
   //
@@ -88,7 +83,7 @@ export class NodeTree {
   public itemCache = partCache;
   public cFrame: CFrame = EMPTY_CFRAME;
   public size: vector = EMPTY_VECTOR;
-  public children: [[item]] = [[]] as unknown as [[item]];
+  public children: item[][] = [[]] as unknown as item[][];
   // public childNodes: [[NodeTree]] = [[]] as unknown as [[NodeTree]];
   // public depth: number = 0;
   constructor(cFrame: CFrame, size: vector, children?: [[item]], maxDepth?: number) {
@@ -143,7 +138,7 @@ export class NodeTree {
       vector.create(stepX * 4, stepY * 4, stepZ * 4)
     ];
   }
-  display(color: Color3, node?: number, time?: number) {
+  display(shape: Enum.PartType, color: Color3, node?: number, time?: number) {
     const children = this.children;
     let displayParts: Part[] = [];
     let startingNode = 1;
@@ -151,7 +146,10 @@ export class NodeTree {
     //if the node has children...
     if (children[startingNode * 8] !== undefined) {
       for (let i = 0; i <= 7; i++) {
-        displayParts = [...displayParts, ...this.display(color, startingNode * 8 + i)];
+        displayParts = [
+          ...displayParts,
+          ...this.display(Enum.PartType.Block, color, startingNode * 8 + i)
+        ];
       }
     } else {
       //display the part
@@ -162,12 +160,8 @@ export class NodeTree {
       nodePart.Size = size as unknown as Vector3;
       //will optimize further later by calcing the new size in the previous function and sending it to the children
       //alsoo need to do a less.. silly calc in general
-<<<<<<< Updated upstream
 
-      nodePart.Shape = Enum.PartType['Block'];
-=======
-      nodePart.Shape = Enum.PartType[shape];
->>>>>>> Stashed changes
+      nodePart.Shape = shape;
       nodePart.Parent = Workspace;
       nodePart.CFrame = this.cFrame.ToWorldSpace(
         new CFrame(position as unknown as Vector3)
@@ -201,6 +195,7 @@ export class NodeTree {
       );
       newNodes.push(shiftedNode + i);
       newNodes = [...newNodes, ...additions];
+      // task.wait();
       // this.subNodes[shiftedNode + i] = [];
     }
     return newNodes;
@@ -211,7 +206,14 @@ export class SphereTree extends NodeTree {
   public position: vector = EMPTY_VECTOR;
   public radius: number = 5;
   public maxDepth: number = 4;
-  constructor(position: vector, radius: number, children?: [[item]], maxDepth?: number) {
+  public maxItems: number = 5;
+  constructor(
+    position: vector,
+    radius: number,
+    children?: [[item]],
+    maxDepth?: number,
+    maxItems?: number
+  ) {
     super(
       //maybe i should just create a new class so I can avoid doing this silly stuff
       undefined as unknown as CFrame,
@@ -221,23 +223,270 @@ export class SphereTree extends NodeTree {
     this.radius = radius;
     if (children !== undefined) this.children = children;
     if (maxDepth !== undefined) this.maxDepth = maxDepth;
+    if (maxItems !== undefined) this.maxItems = maxItems;
   }
-  display(color: Color3, node?: number, time?: number) {
-    super.display('Ball', color, node, time);
+  _display(color: Color3, node?: number, time?: number) {
+    const children = this.children;
+    let displayParts: Part[] = [];
+    let startingNode = 1;
+    if (node !== undefined) startingNode = node;
+    //if the node has children...
+    if (children[startingNode * 8] !== undefined) {
+      for (let i = 0; i <= 7; i++) {
+        displayParts = [...displayParts, ...this._display(color, startingNode * 8 + i)];
+      }
+    } else {
+      //display the part
+      const nodePart = partCache.get() as Part;
+      nodePart.Color = Color3.fromRGB(26, 0, 255);
+      const [offset, radius] = this._getNodeOffsetAndRadius(startingNode);
+
+      nodePart.Size = vector.create(radius, radius, radius) as unknown as Vector3;
+      //will optimize further later by calcing the new size in the previous function and sending it to the children
+      //alsoo need to do a less.. silly calc in general
+
+      nodePart.Shape = Enum.PartType.Ball;
+      nodePart.Parent = Workspace;
+      nodePart.Transparency = 0.8;
+      nodePart.Position = vector.create(
+        this.position.x + offset.x,
+        this.position.y + offset.y,
+        this.position.z + offset.z
+      ) as unknown as Vector3;
+      if (time !== undefined) {
+        task.spawn(function () {
+          task.wait(time);
+          partCache.return(nodePart);
+        });
+      }
+      displayParts.push(nodePart);
+    }
+    return displayParts;
+  }
+
+  _reassignItems(node: number, nodePosition: [number, number, number]) {
+    //
+    const children = this.children;
+    const maxDepth = this.maxDepth;
+    const maxItems = this.maxItems;
+    this.divide8(node, 1);
+
+    const nodeArray = children[node - 1];
+    const nodeChildrenIndex = node * 8;
+
+    for (let i = 0; i < nodeArray.size(); i++) {
+      const item = nodeArray[i];
+      const itemPosition = item.GetPivot().Position;
+      let nodePositionIndex = 0;
+      if (itemPosition.X > nodePosition[0]) {
+        nodePositionIndex += 4;
+      }
+      if (itemPosition.Y > nodePosition[1]) {
+        nodePositionIndex += 2;
+      }
+      if (itemPosition.Z > nodePosition[2]) {
+        nodePositionIndex += 1;
+      }
+      children[nodeChildrenIndex + nodePositionIndex - 1].push(item);
+    }
+    table.clear(nodeArray);
+  }
+
+  insertPart(part: Part) {
+    let depth = 0;
+    let step = this.radius / 4;
+    let chosenNode = 1;
+
+    const children = this.children;
+    const maxDepth = this.maxDepth;
+    const maxItems = this.maxItems;
+    const partPosition = part.Position;
+    const [partPositionX, partPositionY, partPositionZ] = [
+      partPosition.X,
+      partPosition.Y,
+      partPosition.Z
+    ];
+    const position = this.position;
+    let nodePosition: [number, number, number] = [position.x, position.y, position.z];
+    const [nodePositionX, nodePositionY, nodePositionZ] = [
+      nodePosition[0],
+      nodePosition[1],
+      nodePosition[2]
+    ];
+    while (part) {
+      let nodePositionIndex = 0;
+      if (partPositionX > nodePositionX) {
+        nodePositionIndex += 4;
+      }
+      if (partPositionY > nodePositionY) {
+        nodePositionIndex += 2;
+      }
+      if (partPositionZ > nodePositionZ) {
+        nodePositionIndex += 1;
+      }
+      const nextNode = chosenNode * 8 + nodePositionIndex;
+
+      //Found a suitable leaf (empty) node?
+      if (children[nextNode] === undefined) {
+        //put our part in the parent of that leaf node
+
+        const chosenNodeArray = children[chosenNode - 1];
+        chosenNodeArray.push(part);
+
+        //divide that node if there are too many things in it
+        if (chosenNodeArray.size() > maxItems && depth < maxDepth) {
+          this._reassignItems(chosenNode, nodePosition);
+        }
+        break;
+      }
+
+      nodePosition = [
+        nodePosition[0] + step * octreePositions[nodePositionIndex].x,
+        nodePosition[1] + step * octreePositions[nodePositionIndex].y,
+        nodePosition[2] + step * octreePositions[nodePositionIndex].z
+      ];
+      step /= 2;
+      chosenNode = nextNode;
+      depth++;
+    }
+  }
+
+  removePart(part: Part) {
+    let step = this.radius / 4;
+    let chosenNode = 1;
+
+    const children = this.children;
+    const maxDepth = this.maxDepth;
+    const maxItems = this.maxItems;
+    const partPosition = part.Position;
+    const [partPositionX, partPositionY, partPositionZ] = [
+      partPosition.X,
+      partPosition.Y,
+      partPosition.Z
+    ];
+    const position = this.position;
+    let nodePosition: [number, number, number] = [position.x, position.y, position.z];
+    const [nodePositionX, nodePositionY, nodePositionZ] = [
+      nodePosition[0],
+      nodePosition[1],
+      nodePosition[2]
+    ];
+    while (part) {
+      let nodePositionIndex = 0;
+      if (partPositionX > nodePositionX) {
+        nodePositionIndex += 4;
+      }
+      if (partPositionY > nodePositionY) {
+        nodePositionIndex += 2;
+      }
+      if (partPositionZ > nodePositionZ) {
+        nodePositionIndex += 1;
+      }
+      const nextNode = chosenNode * 8 + nodePositionIndex;
+
+      //Found a suitable leaf (empty) node?
+      if (children[nextNode] === undefined) {
+        //put our part in the parent of that leaf node
+        const leafNode = children[chosenNode - 1];
+        const index = leafNode.indexOf(part);
+        if (index !== -1) {
+          leafNode.remove(index); // Remove 1 element at that index
+        }
+        break;
+      }
+
+      nodePosition = [
+        nodePosition[0] + step * octreePositions[nodePositionIndex].x,
+        nodePosition[1] + step * octreePositions[nodePositionIndex].y,
+        nodePosition[2] + step * octreePositions[nodePositionIndex].z
+      ];
+      step /= 2;
+      chosenNode = nextNode;
+    }
+  }
+
+  _getNodeOffsetAndRadius(node: number): [vector, number] {
+    const position = this.position as unknown as vector;
+    //the length of the binary sequence for our node number
+    //we subtract one because the for loop will run at least once
+    //additionally, NumberLength should always be a multiple of 3, because its only possible for us to get certain nodes, ie those in: 1 U [8,15] U [64,71] etc
+    const binaryLength = math.max(32 - bit32.countlz(node), 0) - 1;
+    let step = this.radius / 4;
+    let newPosition = [0, 0, 0];
+    //traverse through the multiple of 3 by 3s
+
+    for (let i = 1; i <= binaryLength; i += 3) {
+      //from right to left, extract 3 bits from the binary sequence and convert it to an actual number
+      const octreePositionIndex = bit32.extract(node, binaryLength - i - 2, 3) + 1;
+      const octreePosition = octreePositions[octreePositionIndex - 1];
+      const stepAxes = [
+        step * octreePosition.x,
+        step * octreePosition.y,
+        step * octreePosition.z
+      ];
+      //we only need to make a vector of this at the end. for now, we use an array, since theyre slightly faster
+      newPosition = [
+        newPosition[0] + stepAxes[0],
+        newPosition[1] + stepAxes[1],
+        newPosition[2] + stepAxes[2]
+      ];
+      // i += 3;
+      step /= 2;
+    }
+    return [
+      vector.create(
+        newPosition[0], //  + position.x
+        newPosition[1], //  + position.y
+        newPosition[2] //   + position.z
+      ),
+      step * 4 * BOX_SPHERE_CONSTANT
+    ];
+  }
+
+  query(queryPosition: vector, queryRadius: number) {
+    queryRadius *= queryRadius;
+    const children = this.children;
+    const position = this.position;
+    const [positionX, positionY, positionZ] = [position.x, position.y, position.z];
+    const chosenNodes = [1];
+    const detectedItems = [];
+
+    while (chosenNodes.size() > 0) {
+      const node = chosenNodes.pop() as number;
+      const nodeItems = children[node - 1];
+      const [nodeOffset, nodeRadius] = this._getNodeOffsetAndRadius(node);
+      const nodePosition = vector.create(
+        positionX + nodeOffset.x,
+        positionY + nodeOffset.y,
+        positionZ + nodeOffset.z
+      );
+      //if approximated spheres not touching, then continue
+      if (!sphereInSphere(nodePosition, nodeRadius, queryPosition, queryRadius)) continue;
+      const childPosition = node * 8;
+      //justr image its 'octreepositionindex' instead of posIndex here. Way too long and im not writing allat
+      for (let posIndex = 0; posIndex <= 7; posIndex++) {
+        const nextNode = childPosition + posIndex;
+        if (children[nextNode - 1] === undefined) {
+          if (nodeItems.size() > 0) {
+            for (const item of nodeItems) {
+              const collided = sphereInSphere(
+                item.GetPivot().Position as unknown as vector,
+                getBoundingSphere(item),
+                queryPosition,
+                queryRadius
+              );
+              if (collided === true) {
+                detectedItems.push(item);
+              }
+            }
+          }
+          break;
+        }
+        chosenNodes.push(nextNode);
+      }
+    }
+    return detectedItems;
   }
 }
 
 //will probably make a DemoTree class later that is built specifically with al the functions to destroy parts
-
-//const SubdivideThreshold = 1 //replacing with a per-octree solution
-
-// const SuffixToOrder = table.freeze({
-// 	newVector(-1,-1,-1),
-// 	newVector(-1,-1,1),
-// 	Vector3.new(-1,1,-1), --2
-// 	Vector3.new(-1,1,1),  --3
-// 	Vector3.new(1,-1,-1), --4
-// 	Vector3.new(1,-1,1),  --5
-// 	Vector3.new(1,1,-1),  --6
-// 	Vector3.new(1,1,1),   --7
-// })
