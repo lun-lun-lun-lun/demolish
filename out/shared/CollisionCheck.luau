@@ -1,8 +1,8 @@
--- From AxisAngle
-
---!strict
---!optimize 2
 --!native
+--!optimize 2
+--!strict
+
+-- From AxisAngle
 
 ---@diagnostic disable: redefined-local
 
