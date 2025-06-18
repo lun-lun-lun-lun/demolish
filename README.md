@@ -3,8 +3,10 @@
 I'll keep working on this after the due date.
 
 
-    
-Demo Tutorial: youtube.com/
+If you're completely new to rojo and roblox-ts, this might help a little:    
+[Demo Tutorial](https://youtu.be/GXOgBcGhFtg)
+https://rojo.space/
+https://roblox-ts.com/docs/setup-guide
 
 ## To Do  
 - Loose octrees for broad-phase  (DONE)
